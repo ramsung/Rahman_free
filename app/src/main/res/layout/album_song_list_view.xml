@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="3dp"
+android:background="#f0f0f0"
+    android:layout_marginLeft="3dp"
+    android:layout_marginStart="2dp"
+
+    android:layout_marginTop="3dp"
+    android:layout_weight="1"
+    android:orientation="horizontal">
+
+    <RelativeLayout
+        android:id="@+id/favsongCover"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="5dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/trackNo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_centerVertical="true"
+            android:fontFamily="@font/capriola"
+            android:textColor="#a0000000"
+            android:textSize="14sp" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/albumsongdetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="2dp"
+        android:layout_marginStart="10dp"
+
+
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/Songtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/capriola"
+            android:maxLines="1"
+            android:text="SONG TITLE"
+            android:textColor="@color/amber_900"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/Songlyricist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:alpha="0.8"
+            android:ellipsize="end"
+            android:fontFamily="@font/capriola"
+            android:maxLines="1"
+            android:paddingBottom="3dp"
+            android:paddingTop="2dp"
+            android:text="Song Lyricist"
+            android:textColor="@color/teal_800"
+            android:textSize="13sp"
+            android:textStyle="italic" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
+    >
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/tamil_top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-7987343674758455/9997637859">
+    </com.google.android.gms.ads.AdView>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="60dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/lyricsOthers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="@font/baloo_thambi"
+            android:lineSpacingExtra="2dp"
+            android:padding="9dp"
+            android:text="தமிழ் பாடல் வரிகள்"
+            android:textAlignment="center"
+            android:textColor="@color/teal_900"
+            android:textIsSelectable="true"
+            android:textSize="16sp" />
+
+
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/tamil_middle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-7987343674758455/6001540769">
+    </com.google.android.gms.ads.AdView>
+
+        <TextView
+            android:id="@+id/lyricsOthers2"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:fontFamily="@font/baloo_thambi"
+            android:lineSpacingExtra="2dp"
+            android:padding="9dp"
+            android:text=""
+            android:textAlignment="center"
+            android:textColor="@color/teal_900"
+            android:textIsSelectable="true"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+    </ScrollView>
+</FrameLayout>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/language_selector"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/white_grey_border_bottom"
+    android:gravity="center"
+    android:orientation="horizontal">
+
+    <info.hoang8f.android.segmented.SegmentedGroup xmlns:segmentedgroup="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/segmented"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:orientation="horizontal"
+        segmentedgroup:sc_border_width="0dp"
+        segmentedgroup:sc_corner_radius="0dp">
+
+        <RadioButton
+            android:id="@+id/tamil"
+            style="@style/RadioButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:text="தமிழ்"
+            android:textColor="@color/teal_800"
+            android:textColorHighlight="@color/amber_800"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/english"
+            style="@style/RadioButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:fontFamily="@font/capriola"
+            android:text="English"
+            android:textColor="@color/teal_800"
+            android:textColorHighlight="@color/amber_800"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </info.hoang8f.android.segmented.SegmentedGroup>
+
+
+</LinearLayout>

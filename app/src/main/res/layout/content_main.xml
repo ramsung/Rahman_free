@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.sothree.slidinguppanel.SlidingUpPanelLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:sothree="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/sliding_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="bottom"
+    sothree:umanoPanelHeight="75dp"
+    sothree:umanoShadowHeight="4dp"
+    sothree:umanoParallaxOffset="100dp"
+    sothree:umanoDragView="@+id/media_actions"
+    sothree:umanoOverlay="true"
+    sothree:umanoScrollableView="@+id/list">
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/maincontent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    tools:context="com.bss.arrahmanlyrics.MainActivity">
+    <include
+        android:id="@+id/media_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        layout="@layout/language_select"
+        android:layout_alignParentTop="true"/>
+
+<com.bss.arrahmanlyrics.utils.CustomViewPager
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="4dp"
+    android:layout_marginStart="4dp"
+    android:layout_marginEnd="4dp"
+    android:layout_above="@+id/moviesongname"
+    android:layout_below="@id/media_tabs"
+     android:id="@+id/vg">
+
+</com.bss.arrahmanlyrics.utils.CustomViewPager>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="75dp"
+        android:layout_alignParentBottom="true"
+        android:id="@+id/moviesongname">
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Movie Title"
+android:gravity="start"
+            android:layout_gravity="start|center"
+            android:layout_weight="1"
+            android:textColor="@color/amber_800"
+
+            android:fontFamily="@font/capriola"
+            android:textSize="14sp"
+
+            android:id="@+id/moviename"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:gravity="right"
+android:layout_gravity="end|center"            android:textColor="@color/amber_800"
+
+android:layout_weight="1"
+            android:text="Song Title"
+
+            android:fontFamily="@font/capriola"
+            android:textSize="14sp"
+            android:id="@+id/songname"/>
+
+    </LinearLayout>
+
+
+</RelativeLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ffffff"
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="false"
+        android:id="@+id/dragView">
+
+
+            <include
+                android:id="@+id/media_actions"
+                android:layout_width="match_parent"
+                android:layout_height="75dp"
+                layout="@layout/player_menu_control"/>
+
+
+
+    <com.bss.arrahmanlyrics.utils.CustomViewPager
+        android:id="@+id/rvg"
+        android:layout_margin="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+    </com.bss.arrahmanlyrics.utils.CustomViewPager>
+        <android.support.design.widget.BottomNavigationView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+
+            android:id="@+id/navigation"
+
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@drawable/white_grey_border_bottom"
+            app:menu="@menu/navigation" />
+
+    </LinearLayout>
+
+</com.sothree.slidinguppanel.SlidingUpPanelLayout>
