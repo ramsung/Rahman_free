@@ -281,6 +281,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         };
 
         // Adding request to request queue
+
         AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
     }
 
@@ -358,6 +359,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         };
 
         // Adding request to request queue
+        Log.d(TAG, "checkLogin: "+strReq);
         AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
     }
 

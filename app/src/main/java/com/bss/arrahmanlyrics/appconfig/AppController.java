@@ -2,6 +2,7 @@ package com.bss.arrahmanlyrics.appconfig;
 
 import android.app.Application;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -36,6 +37,7 @@ public class AppController extends Application {
 	public <T> void addToRequestQueue(Request<T> req, String tag) {
 		req.setTag(TextUtils.isEmpty(tag) ? TAG : tag);
 		getRequestQueue().add(req);
+		Log.d(TAG, "addToRequestQueue: "+req);
 	}
 
 	public <T> void addToRequestQueue(Request<T> req) {
