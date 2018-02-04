@@ -29,7 +29,7 @@
         layout="@layout/language_select"
         android:layout_alignParentTop="true"/>
 
-<com.bss.arrahmanlyrics.utils.CustomViewPager
+<com.bss.arrahmanlyrics.custom_pages.CustomViewPager
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginTop="4dp"
@@ -39,7 +39,7 @@
     android:layout_below="@id/media_tabs"
      android:id="@+id/vg">
 
-</com.bss.arrahmanlyrics.utils.CustomViewPager>
+</com.bss.arrahmanlyrics.custom_pages.CustomViewPager>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -62,7 +62,8 @@ android:gravity="start"
             android:fontFamily="@font/capriola"
             android:textSize="14sp"
 
-            android:id="@+id/moviename"/>
+            android:id="@+id/moviename"
+            android:layout_marginLeft="10dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -76,7 +77,8 @@ android:layout_weight="1"
 
             android:fontFamily="@font/capriola"
             android:textSize="14sp"
-            android:id="@+id/songname"/>
+            android:id="@+id/songname"
+            android:layout_marginRight="10dp" />
 
     </LinearLayout>
 
@@ -100,13 +102,13 @@ android:layout_weight="1"
 
 
 
-    <com.bss.arrahmanlyrics.utils.CustomViewPager
+    <com.bss.arrahmanlyrics.custom_pages.CustomViewPager
         android:id="@+id/rvg"
         android:layout_margin="10dp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
-    </com.bss.arrahmanlyrics.utils.CustomViewPager>
+    </com.bss.arrahmanlyrics.custom_pages.CustomViewPager>
         <android.support.design.widget.BottomNavigationView
             xmlns:app="http://schemas.android.com/apk/res-auto"
 
