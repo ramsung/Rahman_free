@@ -3,7 +3,7 @@
  * URL: www.androidhive.info
  * twitter: http://twitter.com/ravitamada
  * */
-package com.bss.arrahmanlyrics.signinHandler;
+package com.bss.arrahmanlyrics.databaseHandler;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -14,27 +14,24 @@ import android.util.Log;
 
 import java.util.HashMap;
 
-public class SQLiteHandler extends SQLiteOpenHelper {
+public class SQLiteSignInHandler extends SQLiteOpenHelper {
 
-	private static final String TAG = SQLiteHandler.class.getSimpleName();
+	private static final String TAG = SQLiteSignInHandler.class.getSimpleName();
 
 	// All Static variables
 	// Database Version
 	private static final int DATABASE_VERSION = 1;
-
 	// Database Name
-	private static final String DATABASE_NAME = "beyonity_albums";
-
+	private static final String DATABASE_NAME = "beyonity_users";
 	// Login table name
 	private static final String TABLE_USER = "user";
-
 	// Login Table Columns names
 	private static final String KEY_ID = "id";
 	private static final String KEY_NAME = "displayName";
 	private static final String KEY_EMAIL = "email";
 
 
-	public SQLiteHandler(Context context) {
+	public SQLiteSignInHandler(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 

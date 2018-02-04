@@ -16,14 +16,13 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.bss.arrahmanlyrics.appconfig.AppConfig;
 import com.bss.arrahmanlyrics.appconfig.AppController;
-import com.bss.arrahmanlyrics.signinHandler.SQLiteHandler;
-import com.bss.arrahmanlyrics.signinHandler.SessionManager;
+import com.bss.arrahmanlyrics.databaseHandler.DatabaseHandler;
+import com.bss.arrahmanlyrics.databaseHandler.SQLiteSignInHandler;
+import com.bss.arrahmanlyrics.databaseHandler.SessionManager;
 import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInApi;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
@@ -41,14 +40,17 @@ import io.fabric.sdk.android.Fabric;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener{
     private static final String TAG = "MainAcitivity";
     GoogleApiClient mGoogleSignInClient;
+    DatabaseHandler dbHandler;
     private SessionManager session;
-    private SQLiteHandler db;
+    private SQLiteSignInHandler db;
     private ProgressDialog pDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Fabric.with(this, new Crashlytics());
+        db = new SQLiteSignInHandler(getApplicationContext());
+
         pDialog = new ProgressDialog(this);
         pDialog.setCancelable(false);
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -58,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 .enableAutoManage(this, this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
                 .build();
-        db = new SQLiteHandler(getApplicationContext());
+
 
         // Session manager
         session = new SessionManager(getApplicationContext());
@@ -71,10 +73,92 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             //logoutUser();
         }
 
+        dbHandler = new DatabaseHandler(getApplicationContext());
+        int i = dbHandler.getNoOfSongs();
+        if(i<1){
+            downloadDatabase();
+        }
 
     }
 
 
+    private void downloadDatabase() {
+
+        String tag_string_req = "req_albums";
+
+        pDialog.setMessage("Loading Albums ...");
+        showDialog();
+
+        StringRequest strReq = new StringRequest(Request.Method.POST,
+                AppConfig.GET_ALBUMS, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String response) {
+                Log.d(TAG, "Albums Response: " + response.toString());
+                hideDialog();
+
+                Log.d(TAG, "onResponse: "+response);
+                try {
+                    JSONObject jObj = new JSONObject(response);
+                    boolean error = jObj.getBoolean("error");
+                    if (!error) {
+                        // User successfully stored in MySQL
+                        // Now store the user in sqlite
+                        /*String id = jObj.getString("id");
+
+                        JSONObject user = jObj.getJSONObject("user");
+                        //int id = user.getInt("id");
+                        String name = user.getString("displayName");
+                        String email = user.getString("email");
+
+                        // Inserting row in users table
+                        db.addUser(Integer.parseInt(id) ,email,name);
+
+                        Toast.makeText(getApplicationContext(), "User successfully registered. Try login now!", Toast.LENGTH_LONG).show();
+
+
+                        checkLogin(email);*/
+                        Log.d(TAG, "onResponse: "+jObj);
+                    } else {
+
+                        // Error occurred in registration. Get the error
+                        // message
+                        String errorMsg = jObj.getString("error_msg");
+                        Log.e(TAG, "onResponse: "+errorMsg);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Registration Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_LONG).show();
+                //signinTry();
+                hideDialog();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting params to register url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("artist", "1");
+
+
+
+                return params;
+            }
+
+        };
+
+        // Adding request to request queue
+        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
+    }
 
 
     //Google Sign in

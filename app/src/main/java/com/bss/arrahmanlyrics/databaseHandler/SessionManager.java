@@ -1,4 +1,4 @@
-package com.bss.arrahmanlyrics.signinHandler;
+package com.bss.arrahmanlyrics.databaseHandler;
 
 import android.content.Context;
 import android.content.SharedPreferences;
