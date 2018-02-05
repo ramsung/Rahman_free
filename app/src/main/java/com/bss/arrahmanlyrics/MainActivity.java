@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 try {
                     JSONObject jObj = new JSONObject(response);
                     boolean error = jObj.getBoolean("error");
-                    if (!error) {
+                   /* if (!error) {
                         // User successfully stored in MySQL
                         // Now store the user in sqlite
                         /*String id = jObj.getString("id");
@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         Toast.makeText(getApplicationContext(), "User successfully registered. Try login now!", Toast.LENGTH_LONG).show();
 
 
-                        checkLogin(email);*/
+                        checkLogin(email);
                         Log.d(TAG, "onResponse: "+jObj);
                     } else {
 
@@ -125,7 +125,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         // message
                         String errorMsg = jObj.getString("error_msg");
                         Log.e(TAG, "onResponse: "+errorMsg);
-                    }
+                    }*/
+                    Log.d(TAG, "onResponse: "+jObj);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -147,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             protected Map<String, String> getParams() {
                 // Posting params to register url
                 Map<String, String> params = new HashMap<String, String>();
-                params.put("artist", "1");
+                params.put("album_name", "ACHCHAM YENBADHU MADAMAIYADA");
 
 
 
