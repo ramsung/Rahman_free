@@ -29,6 +29,7 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -94,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             @Override
             public void onResponse(String response) {
-                Log.d(TAG, "Albums Response: " + response.toString());
+                //Log.d(TAG, "Albums Response: " + response.toString());
                 hideDialog();
 
                 Log.d(TAG, "onResponse: "+response);
@@ -126,7 +127,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         String errorMsg = jObj.getString("error_msg");
                         Log.e(TAG, "onResponse: "+errorMsg);
                     }*/
-                    Log.d(TAG, "onResponse: "+jObj);
+                    JSONArray array = jObj.getJSONArray("albums");
+
+                    Log.d(TAG, "onResponse: "+array.get(2));
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -148,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             protected Map<String, String> getParams() {
                 // Posting params to register url
                 Map<String, String> params = new HashMap<String, String>();
-                params.put("album_name", "ACHCHAM YENBADHU MADAMAIYADA");
+                params.put("album_name", "NEW");
 
 
 
