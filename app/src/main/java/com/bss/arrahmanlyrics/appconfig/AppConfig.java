@@ -10,6 +10,8 @@ public class AppConfig {
 	//server album request
 	public static String GET_ALBUMS= "https://beyonitysoftwares.cf/android/albums.php";
 
+	//server song request
+	public static String GET_SONGS= "https://beyonitysoftwares.cf/android/songs.php";
 
 	public static String ARTIST_NAME = "AR Rahman";
 	public static int ARTIST_DB_ID = 1;
