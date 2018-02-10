@@ -1,30 +1,58 @@
 package com.bss.arrahmanlyrics;
 
 import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.graphics.Point;
+import android.os.Handler;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.ExpandableListView;
 import android.widget.ImageButton;
+import android.widget.RadioGroup;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
+import com.bss.arrahmanlyrics.Fragments.EnglishFragment;
+import com.bss.arrahmanlyrics.Fragments.TamilFragment;
+import com.bss.arrahmanlyrics.adapter.ExpandableListAdapterMysql;
+import com.bss.arrahmanlyrics.adapter.SongAdapter;
 import com.bss.arrahmanlyrics.appconfig.AppConfig;
 import com.bss.arrahmanlyrics.appconfig.AppController;
+import com.bss.arrahmanlyrics.custom_pages.CustomViewPager;
 import com.bss.arrahmanlyrics.databaseHandler.DatabaseHandler;
 import com.bss.arrahmanlyrics.databaseHandler.SQLiteSignInHandler;
 import com.bss.arrahmanlyrics.databaseHandler.SessionManager;
+import com.bss.arrahmanlyrics.model.albums;
+import com.bss.arrahmanlyrics.model.song;
+import com.bss.arrahmanlyrics.music.MusicService;
+import com.bss.arrahmanlyrics.utility.Helper;
+import com.bss.arrahmanlyrics.utility.RecyclerItemClickListener;
+import com.bss.arrahmanlyrics.utility.StorageUtil;
 import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -34,6 +62,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,11 +70,13 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import info.hoang8f.android.segmented.SegmentedGroup;
 import io.fabric.sdk.android.Fabric;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener{
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener, View.OnClickListener,MusicService.mainActivityCallback{
     private static final String TAG = "MainAcitivity";
     GoogleApiClient mGoogleSignInClient;
     DatabaseHandler dbHandler;
@@ -53,13 +84,138 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private SQLiteSignInHandler db;
     private ProgressDialog pDialog;
 
+
+    List<song> songList;
     private RecyclerView rv1;
+    SongAdapter songAdapter;
+    int request = 0;
+
+    List<albums> albumList;
+    private HashMap<String, List<song>> albumSongList;
+    private ExpandableListView rv2;
+    ExpandableListAdapterMysql albumAdapter;
+
+    //mediaconrols
+    ImageButton playpause, previous, next, shuffle, fav;
+    SeekBar seekBar;
+    TextView currentTime, totalTime, moviename, songname;
+
+    //musicservice
+    boolean serviceBound = false;
+    MusicService player;
+
+    SlidingUpPanelLayout favoritePanel;
+    SegmentedGroup segmentedGroup;
+    EnglishFragment englishFragment;
+    TamilFragment tamilFragment;
+    private Handler mHandler = new Handler();
+
+    Thread t;
+
+    CustomViewPager viewPager;
+
+    int totalSongs = 0;
+    Point p;
+
+    ArrayList<song> playlist = new ArrayList<>();
+
+    public static final String Broadcast_PLAY_NEW_AUDIO = "com.bss.arrahmanlyrics.activites.PlayNewAudio";
+    public static final String Broadcast_NEW_ALBUM = "com.bss.arrahmanlyrics.activites.PlayNewAlbum";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Fabric.with(this, new Crashlytics());
+
+
         db = new SQLiteSignInHandler(getApplicationContext());
+        songList = new ArrayList<>();
+        rv1 = (RecyclerView) findViewById(R.id.rv1);
+        rv1.addItemDecoration(new DividerItemDecoration(getApplicationContext(), LinearLayoutManager.VERTICAL));
+        rv1.setItemAnimator(new DefaultItemAnimator());
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+        rv1.setLayoutManager(layoutManager);
+
+        rv1.addOnItemTouchListener(new RecyclerItemClickListener(getApplicationContext(), new RecyclerItemClickListener.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, int position) {
+                song song = songAdapter.getItem(position);
+
+                StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+
+                if (storageUtil.loadAudio() == null || totalSongs > storageUtil.loadAudio().size()) {
+                    Log.d(TAG, "onItemClick: its null");
+                    for (song songs : songList) {
+                        song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(), songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
+                        playlist.add(s);
+                    }
+                    Log.d(TAG, "onItemClick: playlist = "+playlist.size());
+                    int index = 0;
+                    for (song s : playlist) {
+                        if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
+                            index = playlist.indexOf(s);
+                        }
+                    }
+                    storageUtil.storeAudio(playlist);
+                    storageUtil.storeAudioIndex(index);
+                    Log.d(TAG, "onItemClick: storage = "+storageUtil.loadAudio().size());
+                    Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
+                    sendBroadcast(setplaylist);
+                    Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+                    sendBroadcast(broadcastIntent);
+                    closeDrawer();
+
+                } else {
+                    int index = 0;
+                    Log.i(TAG, "onItemClick: " + song.getSong_title() + " " + song.getAlbum_name());
+                    ArrayList<song> array = new StorageUtil(getApplicationContext()).loadAudio();
+                    for (song s : array) {
+                        if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
+                            Log.i(TAG, "onItemClick: " + s.getSong_title() + " " + s.getAlbum_name());
+                            index = array.indexOf(s);
+                            Log.i(TAG, "onItemClick: " + s.getSong_title() + " " + s.getAlbum_name() + " " + index);
+                        }
+                    }
+                    storageUtil.storeAudioIndex(index);
+                    Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+                    sendBroadcast(broadcastIntent);
+                    closeDrawer();
+                }
+
+
+            }
+        }));
+
+        rv2 = (ExpandableListView) findViewById(R.id.rv2);
+        rv2.setAdapter(albumAdapter);
+        rv2.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
+            @Override
+            public boolean onChildClick(ExpandableListView expandableListView, View view, int i, int i1, long l) {
+                List<albums> model = albumAdapter.get_listDataHeader();
+                HashMap<String, List<song>> map = albumAdapter.get_listDataChild();
+
+
+                List<song> songlistalbums = map.get(model.get(i).getAlbum_name());
+                StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+
+                playlist.clear();
+                for (song songs : songlistalbums) {
+                    song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(), songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
+                    playlist.add(s);
+                }
+                storageUtil.storeAudio(playlist);
+                storageUtil.storeAudioIndex(i1);
+                Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
+                sendBroadcast(setplaylist);
+                Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+                sendBroadcast(broadcastIntent);
+                closeDrawer();
+
+                return false;
+            }
+        });
+        albumList = new ArrayList<>();
+        albumSongList = new HashMap<>();
 
         pDialog = new ProgressDialog(this);
         pDialog.setCancelable(false);
@@ -89,15 +245,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         int noOfSongs = dbHandler.getNoOfSongs();
         int noOfAlbums = dbHandler.getNoOfAlbums();
         Log.d(TAG, "onCreate: songs = "+noOfSongs+" albums = "+noOfAlbums);
-        if(noOfAlbums<1){
-            downloadAlbumDatabase();
-        }
-        if(noOfSongs<1&&noOfAlbums>0){
-            ArrayList<Integer> ids = dbHandler.getAlbumIds();
-           for(int a:ids){
-               downloadSongDatabase(String.valueOf(a));
-           }
-        }
+
+        setUpLyricsPage();
 
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ImageButton menuLeft = (ImageButton) findViewById(R.id.menuleft);
@@ -125,7 +274,144 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         });
 
         setNavigation();
+        //Log.d(TAG, "onCreate: album name = "+dbHandler.getAlbumName(2));
+        if(noOfAlbums<1){
+            downloadAlbumDatabase();
+        }
+        if(noOfSongs>0&&noOfAlbums>0){
+            pDialog.setMessage("Loading songs ...");
+            showDialog();
+            setUpSongsAlbums();
+        }
 
+    }
+
+    public void closeDrawer() {
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else if (drawer.isDrawerOpen(GravityCompat.END)) {
+            drawer.closeDrawer(GravityCompat.END);
+        }
+    }
+    private void setUpLyricsPage() {
+
+        mHandler.post(runnable);
+        playpause = (ImageButton) findViewById(R.id.playpause);
+        previous = (ImageButton) findViewById(R.id.previous);
+        next = (ImageButton) findViewById(R.id.next);
+        shuffle = (ImageButton) findViewById(R.id.shuffle);
+        fav = (ImageButton) findViewById(R.id.fav_pop);
+        fav.setOnClickListener(this);
+
+        viewPager = (CustomViewPager) findViewById(R.id.vg);
+        //viewPager.setPagingEnabled(false);
+        englishFragment = new EnglishFragment();
+        tamilFragment = new TamilFragment();
+        currentTime = (TextView) findViewById(R.id.currentTime);
+        totalTime = (TextView) findViewById(R.id.totalTime);
+        songname = (TextView) findViewById(R.id.songname);
+        moviename = (TextView) findViewById(R.id.moviename);
+
+        segmentedGroup = (SegmentedGroup) findViewById(R.id.segmented);
+        segmentedGroup.setTintColor(getResources().getColor(R.color.amber_900));
+        segmentedGroup.check(R.id.tamil);
+        segmentedGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                switch (i) {
+                    case R.id.tamil:
+                        viewPager.setCurrentItem(0);
+                        break;
+                    case R.id.english:
+                        viewPager.setCurrentItem(1);
+                        break;
+                }
+            }
+        });
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+            @Override
+            public void onPageSelected(int position) {
+                if (position == 0) {
+                    segmentedGroup.check(R.id.tamil);
+                } else if (position == 1) {
+                    segmentedGroup.check(R.id.english);
+                }
+            }
+            @Override
+            public void onPageScrollStateChanged(int state) {}
+        });
+        SectionsPagerAdapter lyricsAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        lyricsAdapter.addFragment(tamilFragment, "Tamil");
+        lyricsAdapter.addFragment(englishFragment, "English");
+        viewPager.setAdapter(lyricsAdapter);
+        playpause.setOnClickListener(this);
+        previous.setOnClickListener(this);
+        next.setOnClickListener(this);
+        shuffle.setOnClickListener(this);
+        seekBar = (SeekBar) findViewById(R.id.seekBar);
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                if (b) {
+                    if (player != null) {
+                        if (player.mediaPlayer != null) {
+                            player.seekTo(i);
+                        }
+                    }
+
+                }
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+    }
+    private Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            if (player != null) {
+                if (player.isPlaying()) {
+                    int position = player.getCurrentPosition();
+                    seekBar.setProgress(position);
+                    currentTime.setText(Helper.durationCalculator(position));
+
+                }
+            }
+            mHandler.postDelayed(runnable, 1000);
+        }
+    };
+
+    private void setUpSongsAlbums() {
+        StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+        storageUtil.clearCachedAudioPlaylist();
+        songList.clear();
+        songList = dbHandler.getSongs();
+        songAdapter = new SongAdapter(songList);
+        rv1.setAdapter(songAdapter);
+        Log.d(TAG, "setUpSongs: "+songList.size());
+        songAdapter.notifyDataSetChanged();
+
+        albumList = dbHandler.getAlbums();
+
+        for(albums a : albumList){
+            int index = albumList.indexOf(a);
+           List<song> oneAlbumSongs = dbHandler.getSongsByAlbumId(a.getAlbum_id());
+           albumList.get(index).setList(oneAlbumSongs);
+           albumSongList.put(a.getAlbum_name(),a.getSonglist());
+        }
+
+        Log.d(TAG, "setUpSongsAlbums: "+albumList.size());
+        albumAdapter = new ExpandableListAdapterMysql(getApplicationContext(),albumList,albumSongList,MainActivity.this);
+        rv2.setAdapter(albumAdapter);
+
+        totalSongs = songList.size();
+        hideDialog();
+        Log.d(TAG, "setUpSongs: "+songList.size());
     }
 
     private void setNavigation() {
@@ -150,7 +436,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             @Override
             public void onResponse(String response) {
                 //Log.d(TAG, "Albums Response: " + response.toString());
-                hideDialog();
+
 
                 //Log.d(TAG, "onResponse: "+response);
                 try {
@@ -169,8 +455,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
                         dbHandler.insertSongs(song_id,id,song_title,download_link,lyricist,track_no);
+
                     }
                     Log.d(TAG, "onResponse: "+jObj);
+                    Log.d(TAG, "onResponse: "+(--request));
+                    if(request == 0){
+                        setUpSongsAlbums();
+                    }
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -203,6 +495,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         // Adding request to request queue
         AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
+        Log.d(TAG, "downloadSongDatabase: "+(++request));
     }
     private void downloadAlbumDatabase() {
 
@@ -217,9 +510,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             @Override
             public void onResponse(String response) {
                 //Log.d(TAG, "Albums Response: " + response.toString());
-                hideDialog();
 
-                Log.d(TAG, "onResponse: "+response);
+
+               // Log.d(TAG, "onResponse: "+response);
                 try {
                     JSONObject jObj = new JSONObject(response);
                     boolean error = jObj.getBoolean("error");
@@ -261,7 +554,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
                         dbHandler.insertAlbums(album_id,album_name,hero,heroin,language,year,image_link);
                     }
-                    Log.d(TAG, "onResponse: "+array.get(2));
+                    ArrayList<Integer> ids = dbHandler.getAlbumIds();
+                    for(int a:ids){
+                        downloadSongDatabase(String.valueOf(a));
+                    }
+                    //setUpSongsAlbums();
+
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -346,8 +645,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         // Tag used to cancel the request
         String tag_string_req = "req_register";
 
-        pDialog.setMessage("Logging in ...");
-        showDialog();
 
         StringRequest strReq = new StringRequest(Request.Method.POST,
                 AppConfig.URL_REGISTER, new Response.Listener<String>() {
@@ -542,4 +839,216 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         builder.show();
 
     }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            MusicService.LocalBinder binder = (MusicService.LocalBinder) service;
+            player = binder.getService();
+            player.setMainCallbacks(MainActivity.this);
+            update();
+            serviceBound = true;
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
+    @Override
+    protected void onStart() {
+        Log.i(TAG, "onStart: on start called");
+        super.onStart();
+        if (!serviceBound) {
+            Intent playerIntent = new Intent(MainActivity.this, MusicService.class);
+            startService(playerIntent);
+            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            Log.i("bounded", "service bounded");
+
+
+        }
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.i("testing", "am in stop");
+        if (serviceBound) {
+            if (player != null) {
+                player.setMainCallbacks(null);
+            }
+        }
+        Log.i("testing", "finished");
+
+    }
+
+    @Override
+    public void onClick(View v) {
+        int id = v.getId();
+        switch (id) {
+            case R.id.playpause: {
+                if (player != null) {
+                    if (player.isPlaying()) {
+                        playpause.setImageResource(R.drawable.play);
+                        player.pauseMedia();
+                    } else {
+                        if (player.mediaPlayer != null) {
+                            if (player.getCurrentPosition() > 0) player.resumeMedia();
+                            playpause.setImageResource(R.drawable.pause);
+                        }
+                    }
+                }
+                break;
+            }
+            case R.id.previous: {
+                if (player != null) {
+                    if (player.isPlaying()) {
+                        if (new StorageUtil(getApplicationContext()).loadAudio().size() > 0) {
+                            player.skipToPrevious();
+                        }
+                    }
+                }
+                break;
+            }
+            case R.id.next: {
+                if (player != null) {
+                    if (player.isPlaying()) {
+                        if (new StorageUtil(getApplicationContext()).loadAudio().size() > 0) {
+                            player.skipToNext();
+                        }
+                    }
+                }
+                break;
+            }
+            case R.id.shuffle: {
+                if (player != null) {
+                    if (player.isShuffleOn()) {
+                        player.setShuffleOnOff(false);
+                        shuffle.setImageResource(R.drawable.shuffleoff);
+                    } else {
+                        player.setShuffleOnOff(true);
+                        shuffle.setImageResource(R.drawable.shuffle);
+
+                    }
+                }
+                break;
+            }
+            /*case R.id.fav_pop: {
+
+                if (player != null) {
+                    if (player.mediaPlayer != null) {
+                        song s = player.getActiveSong();
+                        if (checkFavoriteItem()) {
+                            removeFavorite(s);
+
+                        } else {
+                            addFavorite(s);
+
+                        }
+                    }
+                }
+
+
+                break;
+
+            }*/
+
+        }
+    }
+
+    @Override
+    public void update() {
+        if (player != null && player.mediaPlayer != null) {
+            if (player.isPlaying()) {
+                if (pDialog.isShowing()) {
+                    pDialog.hide();
+                }
+
+                seekBar.setMax(player.getDuration());
+                totalTime.setText(Helper.durationCalculator(player.getDuration()));
+                playpause.setImageResource(R.drawable.pause);
+                //setLyrics(player.getActiveSong());
+                /*if (checkFavoriteItem()) {
+                    fav.setImageResource(R.drawable.favon);
+                } else {
+                    fav.setImageResource(R.drawable.heart);
+                }*/
+                Log.i("CalledSet", "called set details");
+
+            } else {
+
+                if (player.mediaPlayer != null) {
+                    seekBar.setMax(player.getDuration());
+                    playpause.setImageResource(R.drawable.play);
+                }
+
+
+                //playpause.setImageResource(android.R.drawable.ic_media_play);
+            }
+
+
+        }
+    }
+
+    @Override
+    public void showDialog(String name, String movie) {
+        if (pDialog!= null) {
+            Log.i(TAG, "showDialog: loading ");
+
+            pDialog.setMessage("Loading " + Helper.FirstLetterCaps(name) + "\nFrom " + Helper.FirstLetterCaps(movie));
+            pDialog.show();
+
+        }
+    }
+
+
+    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+        private final List<Fragment> mFragmentList = new ArrayList<>();
+        private final List<String> mFragmentTitleList = new ArrayList<>();
+
+        public SectionsPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            return mFragmentList.get(position);
+        }
+
+        @Override
+        public int getCount() {
+            return mFragmentList.size();
+        }
+
+        public void addFragment(Fragment fragment, String title) {
+            mFragmentList.add(fragment);
+            mFragmentTitleList.add(title);
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return mFragmentTitleList.get(position);
+        }
+
+    }
+
+   /* private void setLyrics(song activeSong) {
+        String movieTitle = activeSong.getAlbum_name();
+        String songTitle = activeSong.getSong_title();
+        songname.setText(Helper.FirstLetterCaps(songTitle));
+        moviename.setText(Helper.FirstLetterCaps(movieTitle));
+
+        //HashMap<String, Object> songs = (HashMap<String, Object>) values.get(movieTitle);
+        //HashMap<String, Object> songlyrics = (HashMap<String, Object>) songs.get(songTitle);
+        String english1 = database.getLyricsOne(movieTitle,songTitle);
+        String english2 = database.getLyricsTwo(movieTitle,songTitle);
+        englishFragment.setLyrics(english1, english2);
+
+        String tamil1 = database.getLyricsThree(movieTitle,songTitle);
+        String tamil2 = database.getLyricsFour(movieTitle,songTitle);
+        tamilFragment.setLyrics(tamil1, tamil2);
+
+
+    }*/
 }
