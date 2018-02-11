@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.bss.arrahmanlyrics.albumArts.albumArts;
 import static android.content.ContentValues.TAG;
 
 public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
@@ -105,6 +106,7 @@ public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
 		ImageView thumbnail = (ImageView) convertView.findViewById(R.id.albumimg);
 		title.setText((album.getAlbum_name()));
 		count.setText(album.getSonglist().size() + " songs");
+		thumbnail.setImageBitmap(albumArts.getBitmap(album.getAlbum_id()));
 		//Glide.with(context).load(album.getImageString()).into(holder.thumbnail);
 		//thumbnail.setImageBitmap(activity.getImageBitmap(album.getAlbum_name()));
 

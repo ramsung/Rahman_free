@@ -1,6 +1,9 @@
 package com.bss.arrahmanlyrics.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,8 +14,13 @@ import android.widget.TextView;
 
 import com.bss.arrahmanlyrics.MainActivity;
 import com.bss.arrahmanlyrics.R;
+import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.model.song;
 
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,8 +34,8 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder>{
 	private List<song> songlist;
 	MainActivity activity;
 
-	public SongAdapter(List<song> songlist) {
-
+	public SongAdapter(Context mContext, List<song> songlist) {
+		this.mContext = mContext;
 		this.songlist = songlist;
 		
 		//QuickAction.setDefaultColor(ResourcesCompat.getColor(s.getResources(), R.color.white, null));
@@ -52,8 +60,9 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder>{
 
 		holder.name.setText(actualsong.getSong_title());
 		//holder.name.setText(actualsong.getSongTitle());
-//		Glide.with(mContext).load(actualsong.getImages()).into(holder.imageView);
+		//holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
 		//holder.imageView.setImageBitmap(activity.getImageBitmap(actualsong.getMovietitle()));
+		holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
 		holder.lyricist.setText("Lyricist: " + actualsong.getLyricist());
 		holder.movietitle.setText("Movie: " + actualsong.getAlbum_name());
 

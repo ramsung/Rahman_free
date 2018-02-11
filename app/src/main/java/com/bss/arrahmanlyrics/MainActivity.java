@@ -1,12 +1,16 @@
 package com.bss.arrahmanlyrics;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -28,6 +32,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -41,6 +47,7 @@ import com.bss.arrahmanlyrics.Fragments.EnglishFragment;
 import com.bss.arrahmanlyrics.Fragments.TamilFragment;
 import com.bss.arrahmanlyrics.adapter.ExpandableListAdapterMysql;
 import com.bss.arrahmanlyrics.adapter.SongAdapter;
+import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.appconfig.AppConfig;
 import com.bss.arrahmanlyrics.appconfig.AppController;
 import com.bss.arrahmanlyrics.custom_pages.CustomViewPager;
@@ -53,7 +60,9 @@ import com.bss.arrahmanlyrics.music.MusicService;
 import com.bss.arrahmanlyrics.utility.Helper;
 import com.bss.arrahmanlyrics.utility.RecyclerItemClickListener;
 import com.bss.arrahmanlyrics.utility.StorageUtil;
+
 import com.crashlytics.android.Crashlytics;
+
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -68,6 +77,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -84,6 +104,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private SQLiteSignInHandler db;
     private ProgressDialog pDialog;
 
+
+    ProgressBar bar;
 
     List<song> songList;
     private RecyclerView rv1;
@@ -117,8 +139,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     int totalSongs = 0;
     Point p;
 
+
+    int imageReq = 0;
+    int imageReqCom = 0;
     ArrayList<song> playlist = new ArrayList<>();
 
+    final String image_path = "https://beyonitysoftwares.cf/arts/";
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.bss.arrahmanlyrics.activites.PlayNewAudio";
     public static final String Broadcast_NEW_ALBUM = "com.bss.arrahmanlyrics.activites.PlayNewAlbum";
     @Override
@@ -139,9 +165,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         rv1.addOnItemTouchListener(new RecyclerItemClickListener(getApplicationContext(), new RecyclerItemClickListener.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                song song = songAdapter.getItem(position);
 
-                StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+                song song = songAdapter.getItem(position);
+                downloadLyrics(String.valueOf(song.getSong_id()));
+               /* StorageUtil storageUtil = new StorageUtil(getApplicationContext());
 
                 if (storageUtil.loadAudio() == null || totalSongs > storageUtil.loadAudio().size()) {
                     Log.d(TAG, "onItemClick: its null");
@@ -181,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     sendBroadcast(broadcastIntent);
                     closeDrawer();
                 }
-
+*/
 
             }
         }));
@@ -191,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         rv2.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
             public boolean onChildClick(ExpandableListView expandableListView, View view, int i, int i1, long l) {
+
                 List<albums> model = albumAdapter.get_listDataHeader();
                 HashMap<String, List<song>> map = albumAdapter.get_listDataChild();
 
@@ -203,13 +231,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(), songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
                     playlist.add(s);
                 }
-                storageUtil.storeAudio(playlist);
+                downloadLyrics(String.valueOf(playlist.get(i1).getSong_id()));
+                /*storageUtil.storeAudio(playlist);
                 storageUtil.storeAudioIndex(i1);
                 Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
                 sendBroadcast(setplaylist);
                 Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
                 sendBroadcast(broadcastIntent);
-                closeDrawer();
+                closeDrawer();*/
 
                 return false;
             }
@@ -281,6 +310,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         if(noOfSongs>0&&noOfAlbums>0){
             pDialog.setMessage("Loading songs ...");
             showDialog();
+            setUpImages();
             setUpSongsAlbums();
         }
 
@@ -391,7 +421,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         storageUtil.clearCachedAudioPlaylist();
         songList.clear();
         songList = dbHandler.getSongs();
-        songAdapter = new SongAdapter(songList);
+        songAdapter = new SongAdapter(getApplicationContext(), songList);
         rv1.setAdapter(songAdapter);
         Log.d(TAG, "setUpSongs: "+songList.size());
         songAdapter.notifyDataSetChanged();
@@ -411,6 +441,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         totalSongs = songList.size();
         hideDialog();
+        Log.d(TAG, "setUpSongsAlbums: dialog hidden");
         Log.d(TAG, "setUpSongs: "+songList.size());
     }
 
@@ -452,15 +483,19 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         String download_link = object.getString("download_link");
                         String lyricist = object.getString("lyricist");
                         String track_no = object.getString("track_no");
-
-
                         dbHandler.insertSongs(song_id,id,song_title,download_link,lyricist,track_no);
 
                     }
                     Log.d(TAG, "onResponse: "+jObj);
                     Log.d(TAG, "onResponse: "+(--request));
                     if(request == 0){
-                        setUpSongsAlbums();
+                        ArrayList<Integer> ids = dbHandler.getAlbumIds();
+                        for(int a : ids) {
+                            String imageLink = dbHandler.getImageLink(a);
+                            new DownloadImageTask(a,MainActivity.this).execute(imageLink);
+                        }
+
+                        //setUpSongsAlbums();
                     }
 
                 } catch (JSONException e) {
@@ -477,6 +512,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         error.getMessage(), Toast.LENGTH_LONG).show();
                 //signinTry();
                 hideDialog();
+                Log.d(TAG, "onErrorResponse: dialog hidden");
             }
         }) {
 
@@ -497,6 +533,99 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
         Log.d(TAG, "downloadSongDatabase: "+(++request));
     }
+
+
+
+    private void downloadLyrics(final String id) {
+
+        String tag_string_req = "req_lyrics";
+
+
+
+        StringRequest strReq = new StringRequest(Request.Method.POST,
+                AppConfig.GET_LYRICS, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String response) {
+                Log.d(TAG, "Albums Response: " + response.toString());
+
+
+                Log.d(TAG, "onResponse: "+response);
+                try {
+                    JSONObject jObj = new JSONObject(response);
+                    boolean error = jObj.getBoolean("error");
+
+                  /* JSONArray array = jObj.getJSONArray("songs");
+                    for(int a = 0;a<array.length();a++){
+                        JSONObject object = array.getJSONObject(a);
+                        String song_id = object.getString("song_id");
+                        String id = object.getString("album_id");
+                        String song_title = object.getString("song_title");
+                        String download_link = object.getString("download_link");
+                        String lyricist = object.getString("lyricist");
+                        String track_no = object.getString("track_no");
+                        dbHandler.insertSongs(song_id,id,song_title,download_link,lyricist,track_no);
+
+                    }
+                    Log.d(TAG, "onResponse: "+jObj);
+                    Log.d(TAG, "onResponse: "+(--request));
+                    if(request == 0){
+                        ArrayList<Integer> ids = dbHandler.getAlbumIds();
+                        for(int a : ids) {
+                            String imageLink = dbHandler.getImageLink(a);
+                            new DownloadImageTask(a,MainActivity.this).execute(imageLink);
+                        }
+
+                        //setUpSongsAlbums();
+                    }*/
+
+                    Log.d(TAG, "onResponse: "+jObj);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Registration Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_LONG).show();
+                //signinTry();
+                hideDialog();
+                Log.d(TAG, "onErrorResponse: dialog hidden");
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting params to register url
+                Map<String, String> params = new HashMap<String, String>();
+                Log.d(TAG, "onResponse: song id = "+id);
+                params.put("song_id", id);
+
+
+
+                return params;
+            }
+
+        };
+
+        // Adding request to request queue
+        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
+        Log.d(TAG, "downloadSongDatabase: "+(++request));
+    }
+
+    private void setUpImages() {
+
+
+        for(int a: dbHandler.getAlbumIds()){
+            albumArts.setBitmaps(a,dbHandler.getImageBlob(a));
+        }
+    }
+
     private void downloadAlbumDatabase() {
 
         String tag_string_req = "req_albums";
@@ -550,7 +679,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         String heroin = object.getString("heroin");
                         String language = object.getString("language");
                         String year = object.getString("year");
-                        String image_link = object.getString("image_link");
+                        String image_link = image_path+album_id+".png";
 
                         dbHandler.insertAlbums(album_id,album_name,hero,heroin,language,year,image_link);
                     }
@@ -575,6 +704,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         error.getMessage(), Toast.LENGTH_LONG).show();
                 //signinTry();
                 hideDialog();
+                Log.d(TAG, "onErrorResponse: dialog hidden");
             }
         }) {
 
@@ -652,7 +782,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             @Override
             public void onResponse(String response) {
                 Log.d(TAG, "Register Response: " + response.toString());
-                hideDialog();
+
+                Log.d(TAG, "onResponse: dialog hidden");
 
                 try {
                     JSONObject jObj = new JSONObject(response);
@@ -696,6 +827,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         error.getMessage(), Toast.LENGTH_LONG).show();
                 signinTry();
                 hideDialog();
+                Log.d(TAG, "onErrorResponse: dialoghidden");
             }
         }) {
 
@@ -721,8 +853,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         // Tag used to cancel the request
         String tag_string_req = "req_login";
 
-        pDialog.setMessage("Logging in ...");
-        showDialog();
+
 
         StringRequest strReq = new StringRequest(Request.Method.POST,
                 AppConfig.URL_LOGIN, new Response.Listener<String>() {
@@ -730,7 +861,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             @Override
             public void onResponse(String response) {
                 Log.d(TAG, "Login Response: " + response.toString());
-                hideDialog();
+
+                Log.d(TAG, "onResponse: dialog hidden");
 
                 try {
                     JSONObject jObj = new JSONObject(response);
@@ -777,6 +909,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         error.getMessage(), Toast.LENGTH_LONG).show();
                 signinTry();
                 hideDialog();
+                Log.d(TAG, "onErrorResponse: dialoghidden");
             }
         }) {
 
@@ -969,6 +1102,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 totalTime.setText(Helper.durationCalculator(player.getDuration()));
                 playpause.setImageResource(R.drawable.pause);
                 //setLyrics(player.getActiveSong());
+
                 /*if (checkFavoriteItem()) {
                     fav.setImageResource(R.drawable.favon);
                 } else {
@@ -1051,4 +1185,51 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
     }*/
+   private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+       int id;
+       Activity activity;
+
+       public DownloadImageTask(int id, Activity activity) {
+           this.id = id;
+           this.activity = activity;
+       }
+
+       protected Bitmap doInBackground(String... urls) {
+           String urldisplay = urls[0];
+           Log.i("LEGGERE", urldisplay);
+           Bitmap mIcon11 = null;
+           try {
+               URL url = new URL(urldisplay);
+               mIcon11 = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+
+               if (null != mIcon11)
+                   Log.i("BITMAP", "ISONOTNULL");
+               else
+                   Log.i("BITMAP", "ISNULL");
+           } catch (Exception e) {
+               Log.e("Error", "PORCA VACCA");
+
+           }
+
+           return mIcon11;
+       }
+
+       protected void onPostExecute(Bitmap result) {
+
+           ByteArrayOutputStream stream = new ByteArrayOutputStream();
+           result.compress(Bitmap.CompressFormat.PNG,100,stream);
+           byte[] imagebyte = stream.toByteArray();
+           dbHandler.insertImage(String.valueOf(id),imagebyte);
+           checkTaskComplete();
+          
+       }
+   }
+   
+   public void checkTaskComplete(){
+       ++imageReqCom;
+       if(imageReqCom==dbHandler.getNoOfAlbums()){
+           setUpImages();
+           setUpSongsAlbums();
+       }
+   }
 }

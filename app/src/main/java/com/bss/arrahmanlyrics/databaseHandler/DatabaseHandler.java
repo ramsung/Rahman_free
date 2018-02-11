@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.bss.arrahmanlyrics.custom_pages.CustomViewPager;
 import com.bss.arrahmanlyrics.model.albums;
 import com.bss.arrahmanlyrics.model.song;
 
@@ -27,6 +28,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String TABLE_albums = "albums";
     private static final String TABLE_language = "language";
     private static final String TABLE_songs = "songs";
+    private static final String TABLE_IMAGES = "images";
 
     //album
     private static final String KEY_ALBUM_ID = "album_id";
@@ -49,6 +51,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String KEY_LYRICIST = "lyricist";
     private static final String KEY_TRACK_NO = "track_no";
 
+
+    //images
+    private static final String KEY_IMAGE_BLOB = "image";
     private static final String TAG = DatabaseHandler.class.getSimpleName();
 
 
@@ -67,9 +72,12 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         String CREATE_SONGS_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_songs + " (" + KEY_SONG_ID + " INTEGER UNIQUE, " + KEY_ALBUM_ID + " INTEGER,"
                 + KEY_SONG_TITLE + " varchar(255)," + KEY_DOWNLOAD_LINK + " text," + KEY_LYRICIST + " varchar(255)," + KEY_TRACK_NO + " INTEGER)";
 
+        String CREATE_IMAGE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_IMAGES +" ("+ KEY_ALBUM_ID + " INTEGER UNIQUE, "+ KEY_IMAGE_BLOB +" BLOB)";
+
         db.execSQL(CREATE_ALBUMS_TABLE);
         db.execSQL(CREATE_LANGUAGE_TABLE);
         db.execSQL(CREATE_SONGS_TABLE);
+        db.execSQL(CREATE_IMAGE_TABLE);
 
 
     }
@@ -116,6 +124,34 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     }
 
+    public boolean insertImage(String album_id,byte[] bytearray){
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(KEY_ALBUM_ID,album_id);
+        contentValues.put(KEY_IMAGE_BLOB,bytearray);
+        db.insert(TABLE_IMAGES,null,contentValues);
+
+        return true;
+    }
+
+    public byte[] getImageBlob(int album_id){
+        byte[] array = null;
+        SQLiteDatabase db = getReadableDatabase();
+        String st = "SELECT image FROM "+TABLE_IMAGES+" WHERE album_id = '"+album_id+"'";
+        Cursor c = db.rawQuery(st,null);
+        if(c != null){
+            while (c.moveToNext()){
+                array =  c.getBlob(c.getColumnIndex(KEY_IMAGE_BLOB));
+            }
+        }
+        if(c != null){
+            c.close();
+        }
+
+        return array;
+
+    }
+
     public boolean insertAlbums(String album_id, String album_name, String hero, String heroin, String language, String year, String image_link) {
 
         SQLiteDatabase db = getWritableDatabase();
@@ -141,7 +177,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         while (c.moveToNext()) {
             ids.add(c.getInt(c.getColumnIndex("album_id")));
         }
-
+        if(c != null){
+            c.close();
+        }
         return ids;
     }
 
@@ -155,6 +193,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         contentValues.put(KEY_DOWNLOAD_LINK, download_link);
         contentValues.put(KEY_LYRICIST, lyricist);
         contentValues.put(KEY_TRACK_NO, track_no);
+
         db.insert(TABLE_songs, null, contentValues);
         return true;
 
@@ -171,6 +210,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 albumName = c.getString(c.getColumnIndex(KEY_ALBUM_NAME));
             }
         }
+
 
         return albumName;
     }
@@ -192,13 +232,15 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 String download_link = cursor.getString(cursor.getColumnIndex(KEY_DOWNLOAD_LINK));
                 String lyricist = cursor.getString(cursor.getColumnIndex(KEY_LYRICIST));
                 String track_no = cursor.getString(cursor.getColumnIndex(KEY_TRACK_NO));
+
                 song s = new song(song_id, song_title, album_id, album_name, download_link, lyricist, track_no);
                 songList.add(s);
             }
         }
         // return user
-
-
+        if(cursor != null){
+            cursor.close();
+        }
         return songList;
     }
 
@@ -222,7 +264,27 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 Albums.add(a);
             }
         }
+        if(c != null){
+            c.close();
+        }
         return Albums;
+    }
+
+    public String getImageLink(int album_id){
+        String image_link = "";
+        List<albums> Albums = new ArrayList<>();
+        String selectQuery = "SELECT  image_link FROM " + TABLE_albums +" WHERE album_id = '"+album_id+"'";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery(selectQuery,null);
+        if(c != null){
+            while (c.moveToNext()){
+               image_link = c.getString(c.getColumnIndex(KEY_IMAGE_LINK));
+            }
+        }
+        if(c != null){
+            c.close();
+        }
+        return image_link;
     }
     public List<song> getSongsByAlbumId(int album_id) {
         List<song> songList = new ArrayList<>();
@@ -241,13 +303,16 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 String download_link = cursor.getString(cursor.getColumnIndex(KEY_DOWNLOAD_LINK));
                 String lyricist = cursor.getString(cursor.getColumnIndex(KEY_LYRICIST));
                 String track_no = cursor.getString(cursor.getColumnIndex(KEY_TRACK_NO));
+
                 song s = new song(song_id, song_title, id, album_name, download_link, lyricist, track_no);
                 songList.add(s);
             }
         }
         // return user
 
-
+        if(cursor != null){
+            cursor.close();
+        }
         return songList;
     }
 

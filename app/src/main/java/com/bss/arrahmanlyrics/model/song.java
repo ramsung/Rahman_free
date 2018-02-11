@@ -22,7 +22,10 @@ public class song {
         this.download_link = download_link;
         this.lyricist = lyricist;
         this.track_no = track_no;
+
     }
+
+
 
     public String getAlbum_name() {
         return album_name;
