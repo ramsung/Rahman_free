@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -29,6 +30,8 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.ImageButton;
@@ -39,12 +42,16 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.bss.arrahmanlyrics.Fragments.EnglishFragment;
+import com.bss.arrahmanlyrics.Fragments.FavFragment;
 import com.bss.arrahmanlyrics.Fragments.TamilFragment;
+import com.bss.arrahmanlyrics.Fragments.about;
+import com.bss.arrahmanlyrics.Fragments.apps;
 import com.bss.arrahmanlyrics.adapter.ExpandableListAdapterMysql;
 import com.bss.arrahmanlyrics.adapter.SongAdapter;
 import com.bss.arrahmanlyrics.albumArts.albumArts;
@@ -63,6 +70,10 @@ import com.bss.arrahmanlyrics.utility.StorageUtil;
 
 import com.crashlytics.android.Crashlytics;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -126,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     boolean serviceBound = false;
     MusicService player;
 
-    SlidingUpPanelLayout favoritePanel;
+
     SegmentedGroup segmentedGroup;
     EnglishFragment englishFragment;
     TamilFragment tamilFragment;
@@ -135,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     Thread t;
 
     CustomViewPager viewPager;
+    CustomViewPager viewPager2;
 
     int totalSongs = 0;
     Point p;
@@ -147,12 +159,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     final String image_path = "https://beyonitysoftwares.cf/arts/";
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.bss.arrahmanlyrics.activites.PlayNewAudio";
     public static final String Broadcast_NEW_ALBUM = "com.bss.arrahmanlyrics.activites.PlayNewAlbum";
+
+    private InterstitialAd mInterstitialAd;
+
+    BottomNavigationView bottomMenu;
+    ImageView up;
+    SlidingUpPanelLayout favoritePanel;
+    FavFragment favFragment;
+    about aboutFragment;
+    apps appsFragment;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Fabric.with(this, new Crashlytics());
-
+        MobileAds.initialize(this, "ca-app-pub-7987343674758455~2523296928");
 
         db = new SQLiteSignInHandler(getApplicationContext());
         songList = new ArrayList<>();
@@ -167,8 +188,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             public void onItemClick(View view, int position) {
 
                 song song = songAdapter.getItem(position);
-                downloadLyrics(String.valueOf(song.getSong_id()));
-               /* StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+
+               StorageUtil storageUtil = new StorageUtil(getApplicationContext());
 
                 if (storageUtil.loadAudio() == null || totalSongs > storageUtil.loadAudio().size()) {
                     Log.d(TAG, "onItemClick: its null");
@@ -208,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     sendBroadcast(broadcastIntent);
                     closeDrawer();
                 }
-*/
+
 
             }
         }));
@@ -231,14 +252,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(), songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
                     playlist.add(s);
                 }
-                downloadLyrics(String.valueOf(playlist.get(i1).getSong_id()));
-                /*storageUtil.storeAudio(playlist);
+
+                storageUtil.storeAudio(playlist);
                 storageUtil.storeAudioIndex(i1);
                 Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
                 sendBroadcast(setplaylist);
                 Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
                 sendBroadcast(broadcastIntent);
-                closeDrawer();*/
+                closeDrawer();
 
                 return false;
             }
@@ -312,10 +333,131 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             showDialog();
             setUpImages();
             setUpSongsAlbums();
+            setUp_favoritePanel();
         }
 
     }
 
+    public void setUp_favoritePanel(){
+        up = (ImageView) findViewById(R.id.favup);
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+        mInterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdLoaded() {
+                // Code to be executed when an ad finishes loading.
+                Log.i("Ads Interstitial", "onAdLoaded");
+            }
+
+            @Override
+            public void onAdFailedToLoad(int errorCode) {
+                // Code to be executed when an ad request fails.
+                Log.i("Ads Interstitial", "onAdFailedToLoad" + errorCode);
+            }
+
+            @Override
+            public void onAdOpened() {
+                // Code to be executed when an ad opens an overlay that
+                // covers the screen.
+                Log.i("Ads Interstitial", "onAdOpened");
+            }
+
+            @Override
+            public void onAdLeftApplication() {
+                // Code to be executed when the user has left the app.
+                Log.i("Ads Interstitial", "onAdLeftApplication");
+            }
+
+            @Override
+            public void onAdClosed() {
+                // Code to be executed when when the user is about to return
+                // to the app after tapping on an ad.
+                Log.i("Ads Interstitial", "onAdClosed");
+            }
+        });
+
+        favoritePanel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+        favoritePanel.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
+            @Override
+            public void onPanelSlide(View panel, float slideOffset) {
+
+            }
+
+            @Override
+            public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
+                if (favoritePanel != null &&
+                        (favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED || favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.ANCHORED)) {
+                    if (mInterstitialAd.isLoaded()) {
+                        mInterstitialAd.show();
+                    } else {
+                        Log.d("TAG", "The interstitial wasn't loaded yet.");
+                    }
+                    up.setImageResource(R.drawable.down);
+                } else if (favoritePanel != null &&
+                        (favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.COLLAPSED)) {
+                    up.setImageResource(R.drawable.up);
+                }
+            }
+        });
+        favoritePanel.setAnchorPoint(0.7f);
+
+        favFragment = new FavFragment();
+        aboutFragment = new about();
+        appsFragment = new apps();
+
+        viewPager2 = (CustomViewPager) findViewById(R.id.rvg);
+        favPageAdapter favPageAdapter = new favPageAdapter(getSupportFragmentManager());
+        favPageAdapter.addFragment(favFragment, "Favorite");
+        favPageAdapter.addFragment(aboutFragment, "About");
+        favPageAdapter.addFragment(appsFragment, "Apps");
+
+
+        viewPager2.setAdapter(favPageAdapter);
+        viewPager2.setPagingEnabled(false);
+
+        bottomMenu = (BottomNavigationView) findViewById(R.id.navigation);
+
+        bottomMenu.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                if (item.getItemId() == R.id.navigation_home) {
+                    viewPager2.setCurrentItem(0);
+                } else if (item.getItemId() == R.id.navigation_notifications) {
+                    viewPager2.setCurrentItem(1);
+                } else if (item.getItemId() == R.id.navigation_dashboard) {
+                    viewPager2.setCurrentItem(2);
+                }
+                updateNavigationBarState(item.getItemId());
+
+                return true;
+            }
+        });
+    }
+    private void updateNavigationBarState(int actionId) {
+        Menu menu = bottomMenu.getMenu();
+
+        for (int i = 0, size = menu.size(); i < size; i++) {
+            MenuItem item = menu.getItem(i);
+            item.setChecked(item.getItemId() == actionId);
+        }
+    }
+    @Override
+    public void onBackPressed() {
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else if (drawer.isDrawerOpen(GravityCompat.END)) {
+            drawer.closeDrawer(GravityCompat.END);
+        } else if (favoritePanel != null &&
+                (favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED || favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.ANCHORED)) {
+            favoritePanel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+
+        } else {
+
+            super.onBackPressed();
+        }
+    }
     public void closeDrawer() {
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
@@ -483,10 +625,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                         String download_link = object.getString("download_link");
                         String lyricist = object.getString("lyricist");
                         String track_no = object.getString("track_no");
+
+
                         dbHandler.insertSongs(song_id,id,song_title,download_link,lyricist,track_no);
 
+
                     }
-                    Log.d(TAG, "onResponse: "+jObj);
+                    //Log.d(TAG, "onResponse: "+jObj);
                     Log.d(TAG, "onResponse: "+(--request));
                     if(request == 0){
                         ArrayList<Integer> ids = dbHandler.getAlbumIds();
@@ -497,7 +642,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
                         //setUpSongsAlbums();
                     }
-
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -520,12 +664,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             protected Map<String, String> getParams() {
                 // Posting params to register url
                 Map<String, String> params = new HashMap<String, String>();
+
+
                 params.put("album_id", album_id);
 
 
 
                 return params;
             }
+
+
 
         };
 
@@ -536,7 +684,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
 
-    private void downloadLyrics(final String id) {
+    private void downloadLyrics(final song song_id) {
 
         String tag_string_req = "req_lyrics";
 
@@ -555,29 +703,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     JSONObject jObj = new JSONObject(response);
                     boolean error = jObj.getBoolean("error");
 
-                  /* JSONArray array = jObj.getJSONArray("songs");
+                   JSONArray array = jObj.getJSONArray("lyrics");
                     for(int a = 0;a<array.length();a++){
                         JSONObject object = array.getJSONObject(a);
-                        String song_id = object.getString("song_id");
-                        String id = object.getString("album_id");
-                        String song_title = object.getString("song_title");
-                        String download_link = object.getString("download_link");
-                        String lyricist = object.getString("lyricist");
-                        String track_no = object.getString("track_no");
-                        dbHandler.insertSongs(song_id,id,song_title,download_link,lyricist,track_no);
+                        String lyrics_one = object.getString("lyrics_one");
+                        String lyrics_two = object.getString("lyrics_two");
+                        String lyrics_three = object.getString("lyrics_three");
+                        String lyrics_four = object.getString("lyrics_four");
+                       setLyrics(song_id,lyrics_one,lyrics_two,lyrics_three,lyrics_four);
 
                     }
-                    Log.d(TAG, "onResponse: "+jObj);
-                    Log.d(TAG, "onResponse: "+(--request));
-                    if(request == 0){
-                        ArrayList<Integer> ids = dbHandler.getAlbumIds();
-                        for(int a : ids) {
-                            String imageLink = dbHandler.getImageLink(a);
-                            new DownloadImageTask(a,MainActivity.this).execute(imageLink);
-                        }
 
-                        //setUpSongsAlbums();
-                    }*/
 
                     Log.d(TAG, "onResponse: "+jObj);
 
@@ -603,13 +739,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             protected Map<String, String> getParams() {
                 // Posting params to register url
                 Map<String, String> params = new HashMap<String, String>();
-                Log.d(TAG, "onResponse: song id = "+id);
-                params.put("song_id", id);
+                Log.d(TAG, "onResponse: song id = "+song_id.getSong_id());
+
+                params.put("song_id", String.valueOf(song_id.getSong_id()));
 
 
 
                 return params;
             }
+
+
 
         };
 
@@ -1101,7 +1240,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 seekBar.setMax(player.getDuration());
                 totalTime.setText(Helper.durationCalculator(player.getDuration()));
                 playpause.setImageResource(R.drawable.pause);
-                //setLyrics(player.getActiveSong());
+                //downloadLyrics(player.getActiveSong());
 
                 /*if (checkFavoriteItem()) {
                     fav.setImageResource(R.drawable.favon);
@@ -1126,11 +1265,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     }
 
     @Override
-    public void showDialog(String name, String movie) {
+    public void showDialog(song s) {
         if (pDialog!= null) {
             Log.i(TAG, "showDialog: loading ");
-
-            pDialog.setMessage("Loading " + Helper.FirstLetterCaps(name) + "\nFrom " + Helper.FirstLetterCaps(movie));
+            downloadLyrics(s);
+            pDialog.setMessage("Loading " + Helper.FirstLetterCaps(s.getSong_title()) + "\nFrom " + Helper.FirstLetterCaps(s.getAlbum_name()));
             pDialog.show();
 
         }
@@ -1167,24 +1306,24 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     }
 
-   /* private void setLyrics(song activeSong) {
-        String movieTitle = activeSong.getAlbum_name();
-        String songTitle = activeSong.getSong_title();
+    private void setLyrics(song s,String lyrics_one,String lyrics_two,String lyrics_three, String lyrics_four) {
+        String movieTitle = s.getAlbum_name();
+        String songTitle = s.getSong_title();
         songname.setText(Helper.FirstLetterCaps(songTitle));
         moviename.setText(Helper.FirstLetterCaps(movieTitle));
 
         //HashMap<String, Object> songs = (HashMap<String, Object>) values.get(movieTitle);
         //HashMap<String, Object> songlyrics = (HashMap<String, Object>) songs.get(songTitle);
-        String english1 = database.getLyricsOne(movieTitle,songTitle);
-        String english2 = database.getLyricsTwo(movieTitle,songTitle);
+        String english1 = lyrics_one;
+        String english2 = lyrics_two;
         englishFragment.setLyrics(english1, english2);
 
-        String tamil1 = database.getLyricsThree(movieTitle,songTitle);
-        String tamil2 = database.getLyricsFour(movieTitle,songTitle);
+        String tamil1 = lyrics_three;
+        String tamil2 = lyrics_four;
         tamilFragment.setLyrics(tamil1, tamil2);
 
 
-    }*/
+    }
    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
        int id;
        Activity activity;
@@ -1230,6 +1369,38 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
        if(imageReqCom==dbHandler.getNoOfAlbums()){
            setUpImages();
            setUpSongsAlbums();
+           setUp_favoritePanel();
        }
    }
+
+
+    public class favPageAdapter extends FragmentPagerAdapter {
+        private final List<Fragment> mFragmentList = new ArrayList<>();
+        private final List<String> mFragmentTitleList = new ArrayList<>();
+
+        public favPageAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            return mFragmentList.get(position);
+        }
+
+        @Override
+        public int getCount() {
+            return mFragmentList.size();
+        }
+
+        public void addFragment(Fragment fragment, String title) {
+            mFragmentList.add(fragment);
+            mFragmentTitleList.add(title);
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return mFragmentTitleList.get(position);
+        }
+
+    }
 }

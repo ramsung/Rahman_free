@@ -101,7 +101,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	public interface mainActivityCallback {
 		void update();
 
-		void showDialog(String name, String movie);
+		void showDialog(song s);
 
 
 	}
@@ -507,7 +507,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
 		Log.i(TAG, "onError: "+i +" "+i1);
 		if(maincallback != null && activeSong != null) {
-			maincallback.showDialog(activeSong.getSong_title(), activeSong.getAlbum_name());
+			maincallback.showDialog(activeSong);
 		}
 		return true;
 	}
@@ -567,7 +567,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		equalizer.setEnabled(true);
 		mediaPlayer.prepareAsync();
 		if(maincallback != null) {
-			maincallback.showDialog(activeSong.getSong_title(), activeSong.getAlbum_name());
+			maincallback.showDialog(activeSong);
 		}
 
 	}

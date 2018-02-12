@@ -29,6 +29,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String TABLE_language = "language";
     private static final String TABLE_songs = "songs";
     private static final String TABLE_IMAGES = "images";
+    private static final String TABLE_FAVORITE = "favorite";
 
     //album
     private static final String KEY_ALBUM_ID = "album_id";
@@ -56,6 +57,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String KEY_IMAGE_BLOB = "image";
     private static final String TAG = DatabaseHandler.class.getSimpleName();
 
+    //favorites
+    private static final String KEY_USER_ID = "user_id";
+
 
     public DatabaseHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -74,10 +78,13 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
         String CREATE_IMAGE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_IMAGES +" ("+ KEY_ALBUM_ID + " INTEGER UNIQUE, "+ KEY_IMAGE_BLOB +" BLOB)";
 
+        String CREATE_FAVORITE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_FAVORITE +" ("+KEY_USER_ID+ " INTEGER, "+KEY_SONG_ID + " INTEGER";
+
         db.execSQL(CREATE_ALBUMS_TABLE);
         db.execSQL(CREATE_LANGUAGE_TABLE);
         db.execSQL(CREATE_SONGS_TABLE);
         db.execSQL(CREATE_IMAGE_TABLE);
+        db.execSQL(CREATE_FAVORITE_TABLE);
 
 
     }
@@ -316,5 +323,79 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         return songList;
     }
 
+
+    public boolean insertFavorites(int user_id, int song_id) {
+
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(KEY_USER_ID, user_id);
+        contentValues.put(KEY_SONG_ID, song_id);
+
+        db.insert(TABLE_FAVORITE, null, contentValues);
+        return true;
+
+
+    }
+    public boolean deleteFavorites(int user_id, int song_id) {
+
+        SQLiteDatabase db = getWritableDatabase();
+        String st = "DELETE FROM "+TABLE_FAVORITE+" WHERE user_id = '"+user_id+"' AND song_id = '"+song_id+"'";
+        db.execSQL(st,null);
+        return true;
+
+
+    }
+    public song getSongById(int song_id){
+        song s=null;
+        String selectQuery = "SELECT  * FROM " + TABLE_songs +" WHERE song_id = '"+song_id+"'";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        // Move to first row
+        //cursor.moveToFirst();
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                int sid = cursor.getInt(cursor.getColumnIndex(KEY_SONG_ID));
+                int id = cursor.getInt(cursor.getColumnIndex(KEY_ALBUM_ID));
+                String album_name = getAlbumName(id);
+                String song_title = cursor.getString(cursor.getColumnIndex(KEY_SONG_TITLE));
+                String download_link = cursor.getString(cursor.getColumnIndex(KEY_DOWNLOAD_LINK));
+                String lyricist = cursor.getString(cursor.getColumnIndex(KEY_LYRICIST));
+                String track_no = cursor.getString(cursor.getColumnIndex(KEY_TRACK_NO));
+
+                song sa = new song(song_id, song_title, id, album_name, download_link, lyricist, track_no);
+                s= sa;
+
+            }
+        }
+        // return user
+
+        if(cursor != null){
+            cursor.close();
+        }
+        return s;
+    }
+    public List<song> getFavorites(int user_id){
+        List<song> songList = new ArrayList<>();
+        String selectQuery = "SELECT  * FROM " + TABLE_FAVORITE +" WHERE user_id = '"+user_id+"'";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        // Move to first row
+        //cursor.moveToFirst();
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                int song_id = cursor.getInt(cursor.getColumnIndex(KEY_SONG_ID));
+                song s = getSongById(song_id);
+                songList.add(s);
+            }
+        }
+        // return user
+
+        if(cursor != null){
+            cursor.close();
+        }
+        return songList;
+    }
 
 }
