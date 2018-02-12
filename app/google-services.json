@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "952133274089",
+    "project_id": "rahman-lyrics-1517752714872"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:952133274089:android:9c1e6be523dd0e10",
+        "android_client_info": {
+          "package_name": "com.bss.arrahmanlyrics"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "952133274089-ijiq4unqpokugoft624e915ltd4q416v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bss.arrahmanlyrics",
+            "certificate_hash": "f090811f77bab00374821cff36dda40c80b6c4c6"
+          }
+        },
+        {
+          "client_id": "952133274089-adljs8hds3g951sgb7d29cilb6snem92.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFhPIqOP-s5yeBt_H8hHcvxyCpJMlQ68I"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
