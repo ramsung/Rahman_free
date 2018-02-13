@@ -118,7 +118,8 @@ android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:background="@drawable/white_grey_border_bottom"
-            app:menu="@menu/navigation" />
+            app:menu="@menu/navigation">
+        </android.support.design.widget.BottomNavigationView>
 
     </LinearLayout>
 

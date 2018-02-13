@@ -40,7 +40,9 @@ android:background="#f0f0f0"
         android:layout_marginStart="10dp"
 
 
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginRight="2dp"
+        android:layout_marginLeft="10dp">
 
         <TextView
             android:id="@+id/Songtitle"
