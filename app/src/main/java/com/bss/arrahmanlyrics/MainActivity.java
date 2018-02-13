@@ -1,6 +1,7 @@
 package com.bss.arrahmanlyrics;
 
 import android.app.Activity;
+import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -38,6 +39,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
+import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -107,18 +109,21 @@ import java.util.Map;
 import info.hoang8f.android.segmented.SegmentedGroup;
 import io.fabric.sdk.android.Fabric;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener, View.OnClickListener,MusicService.mainActivityCallback{
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener, View.OnClickListener,MusicService.mainActivityCallback,SearchView.OnQueryTextListener{
     private static final String TAG = "MainAcitivity";
     GoogleApiClient mGoogleSignInClient;
-    DatabaseHandler dbHandler;
+    public static DatabaseHandler dbHandler;
     private SessionManager session;
     private SQLiteSignInHandler db;
     private ProgressDialog pDialog;
+    private ProgressDialog Dialog;
 
 
     ProgressBar bar;
 
     List<song> songList;
+    List<song> songListSearch;
+
     private RecyclerView rv1;
     SongAdapter songAdapter;
     int request = 0;
@@ -168,15 +173,57 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     FavFragment favFragment;
     about aboutFragment;
     apps appsFragment;
+
+    SearchView songsearch;
+    SearchView albumsearch;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Fabric.with(this, new Crashlytics());
         MobileAds.initialize(this, "ca-app-pub-7987343674758455~2523296928");
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+        mInterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdLoaded() {
+                // Code to be executed when an ad finishes loading.
+                Log.i("Ads Interstitial", "onAdLoaded");
+            }
 
+            @Override
+            public void onAdFailedToLoad(int errorCode) {
+                // Code to be executed when an ad request fails.
+                Log.i("Ads Interstitial", "onAdFailedToLoad" + errorCode);
+            }
+
+            @Override
+            public void onAdOpened() {
+                // Code to be executed when an ad opens an overlay that
+                // covers the screen.
+                Log.i("Ads Interstitial", "onAdOpened");
+            }
+
+            @Override
+            public void onAdLeftApplication() {
+                // Code to be executed when the user has left the app.
+                Log.i("Ads Interstitial", "onAdLeftApplication");
+            }
+
+            @Override
+            public void onAdClosed() {
+                // Code to be executed when when the user is about to return
+                // to the app after tapping on an ad.
+                Log.i("Ads Interstitial", "onAdClosed");
+            }
+        });
         db = new SQLiteSignInHandler(getApplicationContext());
         songList = new ArrayList<>();
+        songListSearch = new ArrayList<>();
+
         rv1 = (RecyclerView) findViewById(R.id.rv1);
         rv1.addItemDecoration(new DividerItemDecoration(getApplicationContext(), LinearLayoutManager.VERTICAL));
         rv1.setItemAnimator(new DefaultItemAnimator());
@@ -270,6 +317,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         pDialog = new ProgressDialog(this);
         pDialog.setCancelable(false);
 
+        Dialog = new ProgressDialog(this);
+
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -335,6 +384,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 showDialog();
                 setUpImages();
                 setUpSongsAlbums();
+                Log.d(TAG, "dbhander: "+dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
                 setUp_favoritePanel();
             }else {
                 pDialog.setMessage("Loading songs ...");
@@ -352,42 +402,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     public void setUp_favoritePanel(){
         up = (ImageView) findViewById(R.id.favup);
-        mInterstitialAd = new InterstitialAd(this);
-        mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
-        mInterstitialAd.loadAd(new AdRequest.Builder().build());
-        mInterstitialAd.setAdListener(new AdListener() {
-            @Override
-            public void onAdLoaded() {
-                // Code to be executed when an ad finishes loading.
-                Log.i("Ads Interstitial", "onAdLoaded");
-            }
 
-            @Override
-            public void onAdFailedToLoad(int errorCode) {
-                // Code to be executed when an ad request fails.
-                Log.i("Ads Interstitial", "onAdFailedToLoad" + errorCode);
-            }
-
-            @Override
-            public void onAdOpened() {
-                // Code to be executed when an ad opens an overlay that
-                // covers the screen.
-                Log.i("Ads Interstitial", "onAdOpened");
-            }
-
-            @Override
-            public void onAdLeftApplication() {
-                // Code to be executed when the user has left the app.
-                Log.i("Ads Interstitial", "onAdLeftApplication");
-            }
-
-            @Override
-            public void onAdClosed() {
-                // Code to be executed when when the user is about to return
-                // to the app after tapping on an ad.
-                Log.i("Ads Interstitial", "onAdClosed");
-            }
-        });
 
         favoritePanel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
         favoritePanel.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
@@ -605,6 +620,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             NavigationView navigationView2 = (NavigationView) findViewById(R.id.nav_view2);
             View view = navigationView.getHeaderView(0);
             View view2 = navigationView2.getHeaderView(0);
+        songsearch = (SearchView) view.findViewById(R.id.songsearch);
+        songsearch.setQueryHint("song name, album name, year, lyricist");
+        songsearch.setOnQueryTextListener(this);
     }
 
 
@@ -1259,7 +1277,71 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         }
     }
 
+    private void getFavFromDatabase(String user_id) {
 
+        String tag_string_req = "get_fav";
+
+        pDialog.setMessage("Getting Favorite ...");
+        showDialog();
+
+        StringRequest strReq = new StringRequest(Request.Method.POST,
+                AppConfig.GET_FAV, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String response) {
+                //Log.d(TAG, "Albums Response: " + response.toString());
+
+
+                // Log.d(TAG, "onResponse: "+response);
+                try {
+                    JSONObject jObj = new JSONObject(response);
+                    boolean error = jObj.getBoolean("error");
+                    if(!error) {
+                        JSONArray array = jObj.getJSONArray("favs");
+                        for (int a = 0; a < array.length(); a++) {
+                            JSONObject object = array.getJSONObject(a);
+                            int user_id = object.getInt("user_id");
+                            int song_id = object.getInt("song_id");
+
+
+                            dbHandler.insertFavorites(user_id,song_id);
+                        }
+                    }
+                    setUp_favoritePanel();
+                    Log.d(TAG, "onResponse: "+jObj);
+                    hideDialog();
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Registration Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_LONG).show();
+                //signinTry();
+
+                Log.d(TAG, "onErrorResponse: dialog hidden");
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting params to register url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("user_id", user_id);
+                return params;
+            }
+
+        };
+
+        // Adding request to request queue
+        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
+    }
 
     private void addFavToDatabase(String song_id) {
 
@@ -1283,6 +1365,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     if(!error){
                         dbHandler.insertFavorites(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id));
                     }
+                    if(dbHandler.isFavExists(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id))){
+                        fav.setImageResource(R.drawable.favon);
+                    }
+
+                    setUp_favoritePanel();
                     Log.d(TAG, "onResponse: "+jObj);
 
 
@@ -1347,6 +1434,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     if(!error){
                         dbHandler.deleteFavorites(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id));
                     }
+                    if(!dbHandler.isFavExists(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id))){
+                        fav.setImageResource(R.drawable.heart);
+                    }
+                    setUp_favoritePanel();
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -1422,13 +1513,72 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     @Override
     public void showDialog(song s) {
-        if (pDialog!= null) {
+        if (Dialog!= null) {
             Log.i(TAG, "showDialog: loading ");
             downloadLyrics(s);
+            if(session.isLoggedIn()) {
+                if (dbHandler.isFavExists(Integer.parseInt(db.getUserDetails().get("id")), s.getSong_id())) {
+                    fav.setImageResource(R.drawable.favon);
+                } else {
+                    fav.setImageResource(R.drawable.heart);
+                }
+            }
             pDialog.setMessage("Loading " + Helper.FirstLetterCaps(s.getSong_title()) + "\nFrom " + Helper.FirstLetterCaps(s.getAlbum_name()));
             pDialog.show();
 
         }
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String query) {
+        query = query.toLowerCase().trim();
+        if (query.length() < 1) {
+
+            return false;
+        }
+        if (query.isEmpty()) {
+
+            return false;
+        }
+
+            if(query.length()==4){
+                try {
+                    int year = Integer.parseInt(query);
+                    final List<song> filteralbumlist = new ArrayList<>();
+                    for (song songs : songList) {
+
+                        final String text4 = String.valueOf(dbHandler.getYearByAlbumId(songs.getAlbum_id()));
+                        if (text4.equals(query)) {
+                            filteralbumlist.add(songs);
+                            Log.d(TAG, "onQueryTextChange: " + filteralbumlist.size());
+
+                        }
+                    }
+                    return false;
+                }catch (NumberFormatException e){
+                    Log.d(TAG, "onQueryTextChange: "+e.getMessage());
+                }
+            }
+
+          /*  final List<song> filteralbumlist = new ArrayList<>();
+            for (song songs : songList) {
+                final String text1 = songs.getSong_title().toLowerCase();
+                final String text2 = songs.getAlbum_name().toLowerCase();
+                final String text3 = songs.getLyricist().toLowerCase();
+                final String text4 = String.valueOf(dbHandler.getYearByAlbumId(songs.getAlbum_id()));
+                if (text1.contains(query) || text2.contains(query) || text3.contains(query) || text4.contains(query)) {
+                    filteralbumlist.add(songs);
+                    Log.d(TAG, "onQueryTextChange: "+filteralbumlist.size());
+                    Log.d(TAG, "onQueryTextChange: "+text1+" ,"+text2+" ,"+text3+" ,"+text4);
+                }
+
+        }*/
+        return false;
     }
 
 
@@ -1527,7 +1677,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
        if(imageReqCom==dbHandler.getNoOfAlbums()){
            setUpImages();
            setUpSongsAlbums();
-           setUp_favoritePanel();
+
+           if(session.isLoggedIn()){
+               getFavFromDatabase(db.getUserDetails().get("id"));
+           }
+
        }
    }
 
@@ -1561,5 +1715,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         }
 
     }
+
+
+    @Override
+    protected void onDestroy() {
+        Log.i(TAG, "onDestroy: on destroy called");
+        if (serviceBound) {
+            unbindService(serviceConnection);
+            serviceBound = false;
+            player.setMainCallbacks(null);
+        }
+
+        NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+        Log.i(TAG, "onDestroy: am in destory");
+        if (pDialog!= null) {
+            pDialog.dismiss();
+        }
+        super.onDestroy();
+
+
+    }
+
 }
 

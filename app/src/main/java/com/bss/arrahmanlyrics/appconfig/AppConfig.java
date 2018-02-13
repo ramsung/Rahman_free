@@ -22,6 +22,9 @@ public class AppConfig {
 	//server delete favorites
 	public static String DELETE_FAV= "https://beyonitysoftwares.cf/android/deleteFav.php";
 
+	//server get favorites
+	public static String GET_FAV= "https://beyonitysoftwares.cf/android/getFav.php";
+
 
 
 

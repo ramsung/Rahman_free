@@ -263,7 +263,21 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         return songList;
     }
 
+    public int getYearByAlbumId(int album_id){
+        int year = 0;
+        SQLiteDatabase db = getReadableDatabase();
+        String selectQuery = "SELECT "+KEY_YEAR+" FROM " + TABLE_albums +" WHERE album_id  = '"+album_id+"'";
+        Cursor c = db.rawQuery(selectQuery,null);
+        if(c != null){
+            while (c.moveToNext()){
+                year = c.getInt(c.getColumnIndex(KEY_YEAR));
+            }
+        }
 
+        c.close();
+        return year;
+
+    }
     public List<albums> getAlbums(){
         List<albums> Albums = new ArrayList<>();
         String selectQuery = "SELECT  * FROM " + TABLE_albums +" ORDER BY album_name ASC";
@@ -353,7 +367,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
         SQLiteDatabase db = getWritableDatabase();
         String st = "DELETE FROM "+TABLE_FAVORITE+" WHERE user_id = '"+user_id+"' AND song_id = '"+song_id+"'";
-        db.execSQL(st,null);
+        db.execSQL(st);
         return true;
 
 

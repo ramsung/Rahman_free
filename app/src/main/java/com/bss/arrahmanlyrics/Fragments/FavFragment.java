@@ -2,6 +2,7 @@ package com.bss.arrahmanlyrics.Fragments;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -17,6 +18,7 @@ import com.bss.arrahmanlyrics.MainActivity;
 import com.bss.arrahmanlyrics.R;
 import com.bss.arrahmanlyrics.adapter.FavoriteSongAdapter;
 import com.bss.arrahmanlyrics.custom_pages.DividerItemDecoration;
+import com.bss.arrahmanlyrics.databaseHandler.SQLiteSignInHandler;
 import com.bss.arrahmanlyrics.model.song;
 import com.bss.arrahmanlyrics.utility.RecyclerItemClickListener;
 import com.bss.arrahmanlyrics.utility.StorageUtil;
@@ -24,6 +26,8 @@ import com.bss.arrahmanlyrics.utility.StorageUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.bss.arrahmanlyrics.appconfig.AppController.TAG;
 
 
 /**
@@ -51,6 +55,8 @@ public class FavFragment extends Fragment {
     HashMap<String,Object> values = new HashMap<>();
     HashMap<String,ArrayList<String>> favoritesMab = new HashMap<>();
     ArrayList<song> playlist = new ArrayList<>();
+    SQLiteSignInHandler db;
+
     public FavFragment() {
         // Required empty public constructor
     }
@@ -89,7 +95,10 @@ public class FavFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_fav,container,false);
         //values = ((MainActivity)getActivity()).values;
         rv3 = (RecyclerView) view.findViewById(R.id.rv3);
-        favoriteSongList = new ArrayList<>();
+        db = new SQLiteSignInHandler(getContext());
+        Log.d(TAG, "onCreateView: on fav");
+        favoriteSongList = ((MainActivity)getActivity()).dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id")));
+        Log.d(TAG, "onCreateView: "+favoriteSongList.size());
         adapter = new FavoriteSongAdapter(getContext(),favoriteSongList,((MainActivity)getActivity()));
         rv3.setAdapter(adapter);
         rv3.addItemDecoration(new DividerItemDecoration(getContext(), LinearLayoutManager.VERTICAL));
@@ -103,7 +112,7 @@ public class FavFragment extends Fragment {
                 StorageUtil storageUtil = new StorageUtil(getContext());
                 playlist.clear();
                 for (song songs : favoriteSongList) {
-                    song s = new song(song.getSong_id(),song.getSong_title(),song.getAlbum_id(),song.getAlbum_name(),song.getDownload_link(),song.getLyricist(),song.getTrack_no());
+                    song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(),songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
                     playlist.add(s);
                 }
                 storageUtil.storeAudio(playlist);
@@ -162,7 +171,5 @@ public class FavFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
     }
 
-    public HashMap<String, ArrayList<String>> getFavoritesMab(){
-        return favoritesMab;
-    }
+
 }
