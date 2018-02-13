@@ -1,17 +1,22 @@
 package com.bss.arrahmanlyrics.appconfig;
 
 import android.app.Application;
+import android.content.Context;
+import android.content.res.Configuration;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
+import com.bss.arrahmanlyrics.utility.mediaCache;
+import com.danikula.videocache.HttpProxyCacheServer;
 
 public class AppController extends Application {
 
 	public static final String TAG = AppController.class.getSimpleName();
 
+	private HttpProxyCacheServer proxy;
 	private RequestQueue mRequestQueue;
 
 	private static AppController mInstance;
@@ -50,4 +55,22 @@ public class AppController extends Application {
 			mRequestQueue.cancelAll(tag);
 		}
 	}
+
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+	}
+
+	public static HttpProxyCacheServer getProxy(Context context) {
+		AppController app = (AppController) context.getApplicationContext();
+		return app.proxy == null ? (app.proxy = app.newProxy()) : app.proxy;
+	}
+
+	private HttpProxyCacheServer newProxy() {
+		return new HttpProxyCacheServer.Builder(this)
+				.maxCacheFilesCount(50)
+				.cacheDirectory(mediaCache.getVideoCacheDir(this))
+				.build();
+	}
+
 }

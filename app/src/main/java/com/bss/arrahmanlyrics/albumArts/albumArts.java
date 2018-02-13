@@ -20,4 +20,6 @@ public class albumArts {
     public static Bitmap getBitmap(int id){
         return arts.get(id);
     }
+
+    public static int getSize(){return arts.size();}
 }

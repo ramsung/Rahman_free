@@ -28,8 +28,11 @@ import android.util.Log;
 
 import com.bss.arrahmanlyrics.MainActivity;
 import com.bss.arrahmanlyrics.R;
+import com.bss.arrahmanlyrics.appconfig.AppController;
 import com.bss.arrahmanlyrics.model.song;
 import com.bss.arrahmanlyrics.utility.StorageUtil;
+import com.danikula.videocache.CacheListener;
+import com.danikula.videocache.HttpProxyCacheServer;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +48,7 @@ import static android.content.ContentValues.TAG;
 
 public class MusicService extends Service implements MediaPlayer.OnCompletionListener,
 		MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener,
-		MediaPlayer.OnBufferingUpdateListener, AudioManager.OnAudioFocusChangeListener {
+		MediaPlayer.OnBufferingUpdateListener,CacheListener, AudioManager.OnAudioFocusChangeListener {
 	//creating a mediaplayer object
 	public MediaPlayer mediaPlayer;
 	private final IBinder iBinder = new LocalBinder();
@@ -97,6 +100,11 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	public static final String ACTION_PREVIOUS = "com.bss.arrahmanlyrics.ACTION_PREVIOUS";
 	public static final String ACTION_NEXT = "com.bss.arrahmanlyrics.ACTION_NEXT";
 	public static final String ACTION_STOP = "com.bss.arrahmanlyrics.ACTION_STOP";
+
+	@Override
+	public void onCacheAvailable(File cacheFile, String url, int percentsAvailable) {
+
+	}
 
 	public interface mainActivityCallback {
 		void update();
@@ -151,7 +159,14 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		register_setNewalbum();
 		register_playNewAudio();
 	}
+	private String setProxyUrl(String url) throws IOException {
+		HttpProxyCacheServer proxy = AppController.getProxy(getApplicationContext());
+		proxy.registerCacheListener(this, url);
+		String proxyUrl = proxy.getProxyUrl(url);
+		Log.d("proxy", "Use proxy url " + proxyUrl + " instead of original url " + url);
+		return proxyUrl;
 
+	}
 	private AudioManager.OnAudioFocusChangeListener afChangeListener = new AudioManager.OnAudioFocusChangeListener() {
 		@Override
 		public void onAudioFocusChange(int i) {
@@ -557,7 +572,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 		try {
 			// Set the data source to the mediaFile location
-			mediaPlayer.setDataSource(activeSong.getDownload_link());
+			mediaPlayer.setDataSource(setProxyUrl(activeSong.getDownload_link()));
 			Log.i(TAG, "initMediaPlayer: " + activeSong.getDownload_link());
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -78,7 +78,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
         String CREATE_IMAGE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_IMAGES +" ("+ KEY_ALBUM_ID + " INTEGER UNIQUE, "+ KEY_IMAGE_BLOB +" BLOB)";
 
-        String CREATE_FAVORITE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_FAVORITE +" ("+KEY_USER_ID+ " INTEGER, "+KEY_SONG_ID + " INTEGER";
+        String CREATE_FAVORITE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_FAVORITE +" ("+KEY_USER_ID+ " INTEGER, "+KEY_SONG_ID + " INTEGER)";
 
         db.execSQL(CREATE_ALBUMS_TABLE);
         db.execSQL(CREATE_LANGUAGE_TABLE);
@@ -156,6 +156,18 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         }
 
         return array;
+
+    }
+
+    public int getNumberOfImages(){
+        SQLiteDatabase db = getReadableDatabase();
+        String st = "SELECT * FROM "+TABLE_IMAGES;
+        Cursor c = db.rawQuery(st,null);
+        int count = c.getCount();
+        c.close();
+        db.close();
+        return count;
+
 
     }
 
@@ -332,6 +344,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         contentValues.put(KEY_SONG_ID, song_id);
 
         db.insert(TABLE_FAVORITE, null, contentValues);
+        Log.d(TAG, "insertFavorites: successfully added fav");
         return true;
 
 
@@ -397,5 +410,30 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         }
         return songList;
     }
+
+    public boolean isFavExists(int user_id,int song_id){
+        List<song> songList = new ArrayList<>();
+        String selectQuery = "SELECT  * FROM " + TABLE_FAVORITE +" WHERE user_id = '"+user_id+"' AND song_id = '"+song_id+"'";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        // Move to first row
+        //cursor.moveToFirst();
+        int count = cursor.getCount();
+
+        if(cursor != null){
+            cursor.close();
+        }
+        if(count == 0){
+            return false;
+        }else {
+            return true;
+        }
+
+        // return user
+
+
+    }
+
 
 }

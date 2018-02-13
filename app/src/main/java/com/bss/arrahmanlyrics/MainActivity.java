@@ -329,11 +329,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             downloadAlbumDatabase();
         }
         if(noOfSongs>0&&noOfAlbums>0){
-            pDialog.setMessage("Loading songs ...");
-            showDialog();
-            setUpImages();
-            setUpSongsAlbums();
-            setUp_favoritePanel();
+            Log.d(TAG, "onCreate: "+albumArts.getSize()+", "+ noOfAlbums);
+            if(dbHandler.getNumberOfImages()==noOfAlbums) {
+                pDialog.setMessage("Loading songs ...");
+                showDialog();
+                setUpImages();
+                setUpSongsAlbums();
+                setUp_favoritePanel();
+            }else {
+                pDialog.setMessage("Loading songs ...");
+                showDialog();
+                ArrayList<Integer> ids = dbHandler.getAlbumIds();
+                for(int a : ids) {
+                    String imageLink = dbHandler.getImageLink(a);
+                    new DownloadImageTask(a,MainActivity.this).execute(imageLink);
+                }
+
+            }
         }
 
     }
@@ -1206,27 +1218,171 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 }
                 break;
             }
-            /*case R.id.fav_pop: {
+            case R.id.fav_pop: {
 
                 if (player != null) {
                     if (player.mediaPlayer != null) {
                         song s = player.getActiveSong();
-                        if (checkFavoriteItem()) {
+                        String song_id = String.valueOf(s.getSong_id());
+                        if(session.isLoggedIn()){
+                            boolean exists = dbHandler.isFavExists(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id));
+                            Log.d(TAG, "onClick: fav = "+exists);
+                            if(exists){
+
+                                deleteFromFavDatabase(String.valueOf(s.getSong_id()));
+
+                            }else {
+                                addFavToDatabase(String.valueOf(s.getSong_id()));
+
+                            }
+
+                        }else {
+                            Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+                        }
+                        
+                        
+                        /*if (checkFavoriteItem()) {
                             removeFavorite(s);
 
                         } else {
                             addFavorite(s);
 
-                        }
+                        }*/
                     }
                 }
 
 
                 break;
 
-            }*/
+            }
 
         }
+    }
+
+
+
+    private void addFavToDatabase(String song_id) {
+
+        String tag_string_req = "add_fav";
+
+        pDialog.setMessage("Adding Favorite ...");
+        showDialog();
+
+        StringRequest strReq = new StringRequest(Request.Method.POST,
+                AppConfig.ADD_FAV, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String response) {
+                //Log.d(TAG, "Albums Response: " + response.toString());
+
+
+                // Log.d(TAG, "onResponse: "+response);
+                try {
+                    JSONObject jObj = new JSONObject(response);
+                    boolean error = jObj.getBoolean("error");
+                    if(!error){
+                        dbHandler.insertFavorites(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id));
+                    }
+                    Log.d(TAG, "onResponse: "+jObj);
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Registration Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_LONG).show();
+                //signinTry();
+
+                Log.d(TAG, "onErrorResponse: dialog hidden");
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting params to register url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("user_id", db.getUserDetails().get("id"));
+                params.put("song_id", song_id);
+                
+
+
+
+                return params;
+            }
+
+        };
+
+        // Adding request to request queue
+        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
+    }
+
+    private void deleteFromFavDatabase(String song_id) {
+
+        String tag_string_req = "delete_fav";
+
+        pDialog.setMessage("Deleting Favorite ...");
+        showDialog();
+
+        StringRequest strReq = new StringRequest(Request.Method.POST,
+                AppConfig.DELETE_FAV, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String response) {
+                //Log.d(TAG, "Albums Response: " + response.toString());
+
+
+                // Log.d(TAG, "onResponse: "+response);
+                try {
+                    JSONObject jObj = new JSONObject(response);
+                    boolean error = jObj.getBoolean("error");
+
+                    Log.d(TAG, "onResponse: "+jObj);
+                    if(!error){
+                        dbHandler.deleteFavorites(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id));
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Registration Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_LONG).show();
+                //signinTry();
+                hideDialog();
+                Log.d(TAG, "onErrorResponse: dialog hidden");
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting params to register url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("user_id", db.getUserDetails().get("id"));
+                params.put("song_id", song_id);
+
+
+
+
+                return params;
+            }
+
+        };
+
+        // Adding request to request queue
+        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
     }
 
     @Override
@@ -1358,7 +1514,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
            ByteArrayOutputStream stream = new ByteArrayOutputStream();
            result.compress(Bitmap.CompressFormat.PNG,100,stream);
            byte[] imagebyte = stream.toByteArray();
-           dbHandler.insertImage(String.valueOf(id),imagebyte);
+           if(dbHandler.getImageBlob(id)==null) {
+               dbHandler.insertImage(String.valueOf(id), imagebyte);
+           }
            checkTaskComplete();
           
        }

@@ -16,6 +16,14 @@ public class AppConfig {
 	//server lyrics request
 	public static String GET_LYRICS= "https://beyonitysoftwares.cf/android/lyrics.php";
 
+	//server add favorites
+	public static String ADD_FAV= "https://beyonitysoftwares.cf/android/addFav.php";
+
+	//server delete favorites
+	public static String DELETE_FAV= "https://beyonitysoftwares.cf/android/deleteFav.php";
+
+
+
 
 	public static String ARTIST_NAME = "AR Rahman";
 	public static int ARTIST_DB_ID = 1;
