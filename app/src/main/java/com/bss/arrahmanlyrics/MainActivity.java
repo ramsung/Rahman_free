@@ -85,6 +85,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
@@ -183,6 +184,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        FirebaseInstanceId.getInstance().getToken();
         Fabric.with(this, new Crashlytics());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         MobileAds.initialize(this, "ca-app-pub-7987343674758455~2523296928");
@@ -1583,7 +1585,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 seekBar.setMax(player.getDuration());
                 totalTime.setText(Helper.durationCalculator(player.getDuration()));
                 playpause.setImageResource(R.drawable.pause);
-                //downloadLyrics(player.getActiveSong());
+                downloadLyrics(player.getActiveSong());
 
                 /*if (checkFavoriteItem()) {
                     fav.setImageResource(R.drawable.favon);
@@ -1619,8 +1621,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     fav.setImageResource(R.drawable.heart);
                 }
             }
-            Dialog.setMessage("Loading " + Helper.FirstLetterCaps(s.getSong_title()) + "\nFrom " + Helper.FirstLetterCaps(s.getAlbum_name()));
-            Dialog.show();
+            if(!player.isPlaying()) {
+                Dialog.setMessage("Loading " + Helper.FirstLetterCaps(s.getSong_title()) + "\nFrom " + Helper.FirstLetterCaps(s.getAlbum_name()));
+                Dialog.show();
+            }
 
         }
     }
@@ -1876,7 +1880,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         if (serviceBound) {
             if (player != null) {
                 player.setMainCallbacks(MainActivity.this);
+                if(player.isPlaying()){
+                    Log.d(TAG, "calls: playing");
+                    downloadLyrics(player.getActiveSong());
+                }
                 update();
+
             }
         }
         Log.i(TAG, "calls: on resume over");

@@ -1,7 +1,9 @@
 {
   "project_info": {
     "project_number": "952133274089",
-    "project_id": "rahman-lyrics-1517752714872"
+    "firebase_url": "https://rahman-lyrics-1517752714872.firebaseio.com",
+    "project_id": "rahman-lyrics-1517752714872",
+    "storage_bucket": "rahman-lyrics-1517752714872.appspot.com"
   },
   "client": [
     {
@@ -12,6 +14,18 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "952133274089-jgpp9kboatto2ckq8rqvma9p7dmc40i1.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "952133274089-8e75tciffkhncn5ni2a9u64np7ok1sh4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bss.arrahmanlyrics",
+            "certificate_hash": "65fe7b8033f6acfe9d8fdc23d2e31155de797572"
+          }
+        },
         {
           "client_id": "952133274089-ijiq4unqpokugoft624e915ltd4q416v.apps.googleusercontent.com",
           "client_type": 1,
