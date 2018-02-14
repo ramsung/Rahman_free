@@ -81,6 +81,7 @@ public class TamilFragment extends Fragment {
 		mAdView = (AdView) view.findViewById(R.id.tamil_top);
 
 		AdRequest adRequest = new AdRequest.Builder()
+				.addTestDevice("45AEA33662E36BBB9B11FE55E4EFA874")
 				.build();
 		mAdView.loadAd(adRequest);
 
@@ -121,8 +122,9 @@ public class TamilFragment extends Fragment {
 		mAdView1 = (AdView) view.findViewById(R.id.tamil_middle);
 
 		AdRequest adRequest1 = new AdRequest.Builder()
+				.addTestDevice("45AEA33662E36BBB9B11FE55E4EFA874")
 				.build();
-		mAdView1.loadAd(adRequest);
+		mAdView1.loadAd(adRequest1);
 
 		mAdView1.setAdListener(new AdListener() {
 			@Override

@@ -17,7 +17,9 @@
         android:layout_marginStart="10dp"
         android:id="@+id/playlistlayout"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginRight="2dp"
+        android:layout_marginLeft="10dp">
 
         <TextView
             android:id="@+id/Songtitle"

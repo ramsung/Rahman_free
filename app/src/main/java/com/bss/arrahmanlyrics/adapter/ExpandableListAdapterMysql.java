@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.bss.arrahmanlyrics.albumArts.albumArts;
+import com.bss.arrahmanlyrics.utility.Helper;
+
 import static android.content.ContentValues.TAG;
 
 public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
@@ -63,8 +65,8 @@ public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
 		TextView lyricist = (TextView) convertView.findViewById(R.id.Songlyricist);
 		TextView songtitle = (TextView) convertView.findViewById(R.id.Songtitle);
 		trackNo.setText(String.valueOf(song.getTrack_no()));
-		lyricist.setText((song.getLyricist()));
-		songtitle.setText((song.getSong_title()));
+		lyricist.setText((Helper.FirstLetterCaps(song.getLyricist())));
+		songtitle.setText((Helper.FirstLetterCaps(song.getSong_title())));
 		return convertView;
 	}
 
@@ -104,7 +106,7 @@ public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
 		TextView title = (TextView) convertView.findViewById(R.id.Title);
 		TextView count = (TextView) convertView.findViewById(R.id.TotalSongs);
 		ImageView thumbnail = (ImageView) convertView.findViewById(R.id.albumimg);
-		title.setText((album.getAlbum_name()));
+		title.setText((Helper.FirstLetterCaps(album.getAlbum_name())));
 		count.setText(album.getSonglist().size() + " songs");
 		thumbnail.setImageBitmap(albumArts.getBitmap(album.getAlbum_id()));
 		//Glide.with(context).load(album.getImageString()).into(holder.thumbnail);

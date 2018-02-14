@@ -16,6 +16,7 @@ import com.bss.arrahmanlyrics.MainActivity;
 import com.bss.arrahmanlyrics.R;
 import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.model.song;
+import com.bss.arrahmanlyrics.utility.Helper;
 
 
 import java.io.File;
@@ -58,13 +59,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder>{
 		song actualsong = songlist.get(position);
 
 
-		holder.name.setText(actualsong.getSong_title());
+		holder.name.setText(Helper.FirstLetterCaps(actualsong.getSong_title()));
 		//holder.name.setText(actualsong.getSongTitle());
 		//holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
 		//holder.imageView.setImageBitmap(activity.getImageBitmap(actualsong.getMovietitle()));
 		holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
-		holder.lyricist.setText("Lyricist: " + actualsong.getLyricist());
-		holder.movietitle.setText("Movie: " + actualsong.getAlbum_name());
+		holder.lyricist.setText("Lyricist: " + Helper.FirstLetterCaps(actualsong.getLyricist()));
+		holder.movietitle.setText("Movie: " + Helper.FirstLetterCaps(actualsong.getAlbum_name()));
 
 	}
 
@@ -105,7 +106,9 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder>{
 	}
 
 
-
+	public List<song> getSonglist(){
+		return songlist;
+	}
 
 
 }

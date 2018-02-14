@@ -449,5 +449,111 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     }
 
+    public List<song> getSongsByYear(int year){
+        Log.d(TAG, "getSongsByYear: "+year);
+        SQLiteDatabase db = getReadableDatabase();
+        List<song> list = new ArrayList<>();
+        String st = "SELECT "+KEY_ALBUM_ID+" FROM "+TABLE_albums+" WHERE "+KEY_YEAR+" LIKE '"+year+"%'";
+        Cursor c = db.rawQuery(st,null);
+
+        Log.d(TAG, "getSongsByYear: count = "+c.getCount()+" "+st);
+        if(c!=null){
+            while (c.moveToNext()){
+                int album_id = c.getInt(c.getColumnIndex(KEY_ALBUM_ID));
+                List<song> s = getSongsByAlbumId(album_id);
+                for(song a : s){
+                    list.add(a);
+                }
+            }
+        }
+
+        c.close();
+        return list;
+
+
+
+
+
+    }
+
+    public List<song> getSongsBySearch(String query){
+        SQLiteDatabase db = getReadableDatabase();
+        List<song> list = new ArrayList<>();
+        String st = "SELECT * FROM "+TABLE_songs+" WHERE "+KEY_SONG_TITLE+" LIKE '"+query+"%' OR "+KEY_SONG_TITLE+" LIKE '%"+query+"' OR "+KEY_LYRICIST+" LIKE '"+query+"%' OR "+KEY_LYRICIST+" LIKE '%"+query+"'";
+        Cursor cursor = db.rawQuery(st,null);
+
+        Log.d(TAG, "getSongsByYear: count = "+cursor.getCount()+" "+st);
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                int song_id = cursor.getInt(cursor.getColumnIndex(KEY_SONG_ID));
+                int id = cursor.getInt(cursor.getColumnIndex(KEY_ALBUM_ID));
+                String album_name = getAlbumName(id);
+                String title = cursor.getString(cursor.getColumnIndex(KEY_SONG_TITLE));
+                String download_link = cursor.getString(cursor.getColumnIndex(KEY_DOWNLOAD_LINK));
+                String ly = cursor.getString(cursor.getColumnIndex(KEY_LYRICIST));
+                String track_no = cursor.getString(cursor.getColumnIndex(KEY_TRACK_NO));
+
+                song s = new song(song_id, title, id, album_name, download_link, ly, track_no);
+                list.add(s);
+            }
+        }
+        // return user
+
+        if(cursor != null){
+            cursor.close();
+        }
+        return list;
+
+
+    }
+    public List<albums> getAlbumsByYear(int year){
+        List<albums> Albums = new ArrayList<>();
+        String st = "SELECT * FROM "+TABLE_albums+" WHERE "+KEY_YEAR+" LIKE '"+year+"%'";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery(st,null);
+        if(c != null){
+            while (c.moveToNext()){
+                int album_id = c.getInt(c.getColumnIndex(KEY_ALBUM_ID));
+                String album_name = c.getString(c.getColumnIndex(KEY_ALBUM_NAME));
+
+                String hero = c.getString(c.getColumnIndex(KEY_HERO));
+                String heroin = c.getString(c.getColumnIndex(KEY_HEROIN));
+
+                int y = c.getInt(c.getColumnIndex(KEY_YEAR));
+                String image_link = c.getString(c.getColumnIndex(KEY_IMAGE_LINK));
+                albums a = new albums(album_id,album_name,hero,heroin,y,image_link);
+                Albums.add(a);
+            }
+        }
+        if(c != null){
+            c.close();
+        }
+        return Albums;
+    }
+
+    public List<albums> getAlbumsByName(String query){
+        List<albums> Albums = new ArrayList<>();
+        String st = "SELECT * FROM "+TABLE_albums+" WHERE "+KEY_ALBUM_NAME+" LIKE '"+query+"%' OR "+KEY_ALBUM_NAME+" LIKE '%"+query+"'";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery(st,null);
+        if(c != null){
+            while (c.moveToNext()){
+                int album_id = c.getInt(c.getColumnIndex(KEY_ALBUM_ID));
+                String album_name = c.getString(c.getColumnIndex(KEY_ALBUM_NAME));
+
+                String hero = c.getString(c.getColumnIndex(KEY_HERO));
+                String heroin = c.getString(c.getColumnIndex(KEY_HEROIN));
+
+                int y = c.getInt(c.getColumnIndex(KEY_YEAR));
+                String image_link = c.getString(c.getColumnIndex(KEY_IMAGE_LINK));
+                albums a = new albums(album_id,album_name,hero,heroin,y,image_link);
+                Albums.add(a);
+            }
+        }
+        if(c != null){
+            c.close();
+        }
+        return Albums;
+    }
 
 }

@@ -34,6 +34,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ExpandableListView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -183,10 +184,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Fabric.with(this, new Crashlytics());
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         MobileAds.initialize(this, "ca-app-pub-7987343674758455~2523296928");
         mInterstitialAd = new InterstitialAd(this);
         mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
-        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+        mInterstitialAd.loadAd(new AdRequest.Builder().addTestDevice("45AEA33662E36BBB9B11FE55E4EFA874").build());
         mInterstitialAd.setAdListener(new AdListener() {
             @Override
             public void onAdLoaded() {
@@ -235,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             public void onItemClick(View view, int position) {
 
                 song song = songAdapter.getItem(position);
+                Log.d(TAG, "onItemClick: "+songList.indexOf(song));
 
                StorageUtil storageUtil = new StorageUtil(getApplicationContext());
 
@@ -318,7 +321,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         pDialog.setCancelable(false);
 
         Dialog = new ProgressDialog(this);
-
+        Dialog.setCancelable(true);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -621,8 +624,97 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             View view = navigationView.getHeaderView(0);
             View view2 = navigationView2.getHeaderView(0);
         songsearch = (SearchView) view.findViewById(R.id.songsearch);
-        songsearch.setQueryHint("song name, album name, year, lyricist");
+        songsearch.setQueryHint("Song, Year, Lyricist");
         songsearch.setOnQueryTextListener(this);
+        albumsearch = (SearchView) view2.findViewById(R.id.albumsearch);
+        albumsearch.setQueryHint("Movie Name, Year");
+        albumsearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String query) {
+                query = query.toLowerCase().trim();
+                Log.d(TAG, "setUpalbums: " + songList.size());
+                if (query.length() < 1) {
+                    albumAdapter = new ExpandableListAdapterMysql(getApplicationContext(), albumList, albumSongList, MainActivity.this);
+                    rv2.setAdapter(albumAdapter);
+                    Log.d(TAG, "setUpalbums: " + songList.size());
+                    albumAdapter.notifyDataSetChanged();
+                    return false;
+                }
+                if (query.isEmpty()) {
+                    albumAdapter = new ExpandableListAdapterMysql(getApplicationContext(), albumList, albumSongList, MainActivity.this);
+                    rv2.setAdapter(albumAdapter);
+                    Log.d(TAG, "setUpalbums: " + songList.size());
+                    albumAdapter.notifyDataSetChanged();
+                    return false;
+                }
+
+                if (query.length() == 4) {
+
+                    try {
+                        int year = Integer.parseInt(query);
+                        List<albums> FiltertedAlbumList = new ArrayList<>();
+                        HashMap<String, List<song>> filteredAlbumSongList = new HashMap<>();
+                     /*   for (albums album : albumList) {
+                            Log.d(TAG, "setUpSongs: 4");
+                            final String y = String.valueOf(album.getYear());
+                            if (y.equals(query)) {
+                                FiltertedAlbumList.add(album);
+
+                            }
+                        }*/
+                        FiltertedAlbumList = dbHandler.getAlbumsByYear(year);
+                        if (FiltertedAlbumList.size() > 0) {
+                            for (albums album : FiltertedAlbumList) {
+                                List<song> filteredlist = dbHandler.getSongsByAlbumId(album.getAlbum_id());
+                                album.setList(filteredlist);
+                                filteredAlbumSongList.put(album.getAlbum_name(), filteredlist);
+                            }
+                            albumAdapter = new ExpandableListAdapterMysql(getApplicationContext(), FiltertedAlbumList, filteredAlbumSongList, MainActivity.this);
+                            rv2.setAdapter(albumAdapter);
+                            albumAdapter.notifyDataSetChanged();
+                        }
+
+
+
+                        return false;
+                    } catch (NumberFormatException e) {
+                        Log.d(TAG, "onQueryTextChange: " + e.getMessage());
+                    }
+                }
+                List<albums> FiltertedAlbumList = new ArrayList<>();
+                HashMap<String, List<song>> filteredAlbumSongList = new HashMap<>();
+
+               /* for (albums album : albumList) {
+                    String text1 = album.getAlbum_name().toLowerCase();
+
+                    if (text1.contains(query)) {
+                        FiltertedAlbumList.add(album);
+                        filteredAlbumSongList.put(album.getAlbum_name(),album.getSonglist());
+                    }
+                }*/
+               FiltertedAlbumList = dbHandler.getAlbumsByName(query);
+                if(FiltertedAlbumList.size()>0) {
+
+                    for (albums album : FiltertedAlbumList) {
+                        List<song> filteredlist = dbHandler.getSongsByAlbumId(album.getAlbum_id());
+                        album.setList(filteredlist);
+                        filteredAlbumSongList.put(album.getAlbum_name(), filteredlist);
+                    }
+                    albumAdapter = new ExpandableListAdapterMysql(getApplicationContext(), FiltertedAlbumList, filteredAlbumSongList, MainActivity.this);
+                    rv2.setAdapter(albumAdapter);
+                    albumAdapter.notifyDataSetChanged();
+                }
+
+
+
+                return false;
+            }
+        });
     }
 
 
@@ -1161,7 +1253,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     };
     @Override
     protected void onStart() {
-        Log.i(TAG, "onStart: on start called");
+        Log.i(TAG, "calls: on start called");
         super.onStart();
         if (!serviceBound) {
             Intent playerIntent = new Intent(MainActivity.this, MusicService.class);
@@ -1175,13 +1267,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     @Override
     protected void onStop() {
         super.onStop();
-        Log.i("testing", "am in stop");
+        Log.i("calls", "am in stop");
         if (serviceBound) {
             if (player != null) {
                 player.setMainCallbacks(null);
             }
         }
-        Log.i("testing", "finished");
+        Log.i("calls", "finished");
 
     }
 
@@ -1368,7 +1460,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     if(dbHandler.isFavExists(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id))){
                         fav.setImageResource(R.drawable.favon);
                     }
-
+                    hideDialog();
                     setUp_favoritePanel();
                     Log.d(TAG, "onResponse: "+jObj);
 
@@ -1437,6 +1529,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     if(!dbHandler.isFavExists(Integer.parseInt(db.getUserDetails().get("id")),Integer.parseInt(song_id))){
                         fav.setImageResource(R.drawable.heart);
                     }
+                    hideDialog();
                     setUp_favoritePanel();
 
                 } catch (JSONException e) {
@@ -1481,7 +1574,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         if (player != null && player.mediaPlayer != null) {
             if (player.isPlaying()) {
                 if (pDialog.isShowing()) {
-                    pDialog.hide();
+                    pDialog.dismiss();
+
+                }if(Dialog.isShowing()){
+                    Dialog.dismiss();
                 }
 
                 seekBar.setMax(player.getDuration());
@@ -1523,8 +1619,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     fav.setImageResource(R.drawable.heart);
                 }
             }
-            pDialog.setMessage("Loading " + Helper.FirstLetterCaps(s.getSong_title()) + "\nFrom " + Helper.FirstLetterCaps(s.getAlbum_name()));
-            pDialog.show();
+            Dialog.setMessage("Loading " + Helper.FirstLetterCaps(s.getSong_title()) + "\nFrom " + Helper.FirstLetterCaps(s.getAlbum_name()));
+            Dialog.show();
 
         }
     }
@@ -1537,47 +1633,80 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     @Override
     public boolean onQueryTextChange(String query) {
         query = query.toLowerCase().trim();
+        Log.d(TAG, "setUpSongs: "+songList.size());
         if (query.length() < 1) {
-
+            songAdapter = new SongAdapter(getApplicationContext(), songList);
+            rv1.setAdapter(songAdapter);
+            Log.d(TAG, "setUpSongs: "+songList.size());
+            songAdapter.notifyDataSetChanged();
             return false;
         }
         if (query.isEmpty()) {
-
+            songAdapter = new SongAdapter(getApplicationContext(), songList);
+            rv1.setAdapter(songAdapter);
+            Log.d(TAG, "setUpSongs: "+songList.size());
+            songAdapter.notifyDataSetChanged();
             return false;
         }
 
             if(query.length()==4){
+
                 try {
                     int year = Integer.parseInt(query);
-                    final List<song> filteralbumlist = new ArrayList<>();
+                    /*final List<song> filteralbumlist = new ArrayList<>();
                     for (song songs : songList) {
-
+                        Log.d(TAG, "setUpSongs: 4");
                         final String text4 = String.valueOf(dbHandler.getYearByAlbumId(songs.getAlbum_id()));
                         if (text4.equals(query)) {
                             filteralbumlist.add(songs);
                             Log.d(TAG, "onQueryTextChange: " + filteralbumlist.size());
-
+                            songAdapter = new SongAdapter(getApplicationContext(), filteralbumlist);
+                            rv1.setAdapter(songAdapter);
+                            Log.d(TAG, "setUpSongs: "+songList.size());
+                            songAdapter.notifyDataSetChanged();
                         }
+                    }*/
+                    final List<song> filtersonglist = dbHandler.getSongsByYear(year);
+                    if(filtersonglist.size()>0){
+                        songAdapter = new SongAdapter(getApplicationContext(), filtersonglist);
+                        rv1.setAdapter(songAdapter);
+                        Log.d(TAG, "setUpSongs: "+songList.size());
+                        songAdapter.notifyDataSetChanged();
                     }
+
+
                     return false;
                 }catch (NumberFormatException e){
                     Log.d(TAG, "onQueryTextChange: "+e.getMessage());
                 }
             }
 
-          /*  final List<song> filteralbumlist = new ArrayList<>();
-            for (song songs : songList) {
+            List<song> filtersonglist = new ArrayList<>();
+           /* for (song songs : songList) {
                 final String text1 = songs.getSong_title().toLowerCase();
                 final String text2 = songs.getAlbum_name().toLowerCase();
                 final String text3 = songs.getLyricist().toLowerCase();
-                final String text4 = String.valueOf(dbHandler.getYearByAlbumId(songs.getAlbum_id()));
-                if (text1.contains(query) || text2.contains(query) || text3.contains(query) || text4.contains(query)) {
+
+                if (text1.contains(query) || text2.contains(query) || text3.contains(query)) {
                     filteralbumlist.add(songs);
                     Log.d(TAG, "onQueryTextChange: "+filteralbumlist.size());
-                    Log.d(TAG, "onQueryTextChange: "+text1+" ,"+text2+" ,"+text3+" ,"+text4);
+                    Log.d(TAG, "onQueryTextChange: "+text1+" ,"+text2+" ,"+text3);
+                    Log.d(TAG, "onQueryTextChange: " + filteralbumlist.size());
+                    songAdapter = new SongAdapter(getApplicationContext(), filteralbumlist);
+                    rv1.setAdapter(songAdapter);
+                    Log.d(TAG, "setUpSongs: "+songList.size());
+                    songAdapter.notifyDataSetChanged();
                 }
 
         }*/
+           filtersonglist = dbHandler.getSongsBySearch(query);
+        if(filtersonglist.size()>0){
+            songAdapter = new SongAdapter(getApplicationContext(), filtersonglist);
+            rv1.setAdapter(songAdapter);
+            Log.d(TAG, "setUpSongs: "+songList.size());
+            songAdapter.notifyDataSetChanged();
+        }
+
         return false;
     }
 
@@ -1732,10 +1861,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         if (pDialog!= null) {
             pDialog.dismiss();
         }
+        if(pDialog!=null){
+            pDialog.dismiss();
+        }
         super.onDestroy();
 
 
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "calls: on resume called");
+        if (serviceBound) {
+            if (player != null) {
+                player.setMainCallbacks(MainActivity.this);
+                update();
+            }
+        }
+        Log.i(TAG, "calls: on resume over");
+    }
+
 
 }
 
