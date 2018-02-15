@@ -18,7 +18,7 @@ public class AppController extends Application {
 
 	private HttpProxyCacheServer proxy;
 	private RequestQueue mRequestQueue;
-
+	private static String APP_LINK = "https://arrahmanlyrics.beyonitysoftwares.in";
 	private static AppController mInstance;
 
 	@Override
@@ -73,4 +73,7 @@ public class AppController extends Application {
 				.build();
 	}
 
+	public static String getAppLink(){
+		return APP_LINK;
+	}
 }

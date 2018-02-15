@@ -70,7 +70,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	private MediaSessionManager mediaSessionManager;
 	private MediaSessionCompat mediaSession;
 	private MediaControllerCompat.TransportControls transportControls;
-
+	private boolean isPaused = false;
 	boolean lostFocusLoss = false;
 	public void seekTo(int i) {
 		mediaPlayer.seekTo(i);
@@ -837,7 +837,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		if (mediaPlayer.isPlaying()) {
 
 			mediaPlayer.stop();
-
+			isPaused = false;
 
 		}
 	}
@@ -847,6 +847,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			mediaPlayer.start();
 			updateMetaData();
 			buildNotification(PlaybackStatus.PLAYING);
+			isPaused = false;
 		}
 	}
 
@@ -855,6 +856,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			mediaPlayer.pause();
 			updateMetaData();
 			buildNotification(PlaybackStatus.PAUSED);
+			isPaused = true;
 
 			new StorageUtil(getApplicationContext()).storeResumePosition(mediaPlayer.getCurrentPosition());
 		}
@@ -868,6 +870,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 					mediaPlayer.seekTo(resumePosition);
 					mediaPlayer.start();
 					buildNotification(PlaybackStatus.PLAYING);
+					isPaused = false;
 
 				}
 			}
@@ -1004,4 +1007,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		} else return false;
 	}
 
+	public boolean isPaused(){
+		return isPaused;
+	}
 }

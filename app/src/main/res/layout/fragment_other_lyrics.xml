@@ -20,20 +20,37 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/lyricsOthers"
+        <ImageButton
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:fontFamily="@font/baloo_thambi"
-            android:lineSpacingExtra="2dp"
-            android:padding="9dp"
-            android:text="தமிழ் பாடல் வரிகள்"
-            android:textAlignment="center"
-            android:textColor="@color/teal_900"
-            android:textIsSelectable="true"
-            android:textSize="16sp" />
+            android:layout_height="match_parent"
+
+
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_gravity="center"
+            android:background="@android:color/transparent"
+
+            android:onClick="share"
+            android:src="@drawable/ic_share_black_24dp"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="10dp" />
+
+            <TextView
+                android:id="@+id/lyricsOthers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:fontFamily="@font/baloo_thambi"
+                android:lineSpacingExtra="2dp"
+                android:padding="9dp"
+                android:text="தமிழ் பாடல் வரிகள்"
+                android:textAlignment="center"
+                android:textColor="@color/teal_900"
+                android:textIsSelectable="true"
+                android:textSize="16sp" />
+
+
+
 
 
     <com.google.android.gms.ads.AdView

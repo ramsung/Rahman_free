@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
@@ -84,6 +85,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
@@ -187,6 +190,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         FirebaseInstanceId.getInstance().getToken();
         Fabric.with(this, new Crashlytics());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+
         MobileAds.initialize(this, "ca-app-pub-7987343674758455~2523296928");
         mInterstitialAd = new InterstitialAd(this);
         mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
@@ -227,7 +232,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         db = new SQLiteSignInHandler(getApplicationContext());
         songList = new ArrayList<>();
         songListSearch = new ArrayList<>();
-
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        Uri data = intent.getData();
         rv1 = (RecyclerView) findViewById(R.id.rv1);
         rv1.addItemDecoration(new DividerItemDecoration(getApplicationContext(), LinearLayoutManager.VERTICAL));
         rv1.setItemAnimator(new DefaultItemAnimator());
@@ -239,17 +246,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             public void onItemClick(View view, int position) {
 
                 song song = songAdapter.getItem(position);
-                Log.d(TAG, "onItemClick: "+songList.indexOf(song));
+                Log.d(TAG, "onItemClick: " + songList.indexOf(song));
 
-               StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+                StorageUtil storageUtil = new StorageUtil(getApplicationContext());
 
                 if (storageUtil.loadAudio() == null || totalSongs > storageUtil.loadAudio().size()) {
                     Log.d(TAG, "onItemClick: its null");
                     for (song songs : songList) {
-                        song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(), songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
+                        song s = new song(songs.getSong_id(), songs.getSong_title(), songs.getAlbum_id(), songs.getAlbum_name(), songs.getDownload_link(), songs.getLyricist(), songs.getTrack_no());
                         playlist.add(s);
                     }
-                    Log.d(TAG, "onItemClick: playlist = "+playlist.size());
+                    Log.d(TAG, "onItemClick: playlist = " + playlist.size());
                     int index = 0;
                     for (song s : playlist) {
                         if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
@@ -258,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     }
                     storageUtil.storeAudio(playlist);
                     storageUtil.storeAudioIndex(index);
-                    Log.d(TAG, "onItemClick: storage = "+storageUtil.loadAudio().size());
+                    Log.d(TAG, "onItemClick: storage = " + storageUtil.loadAudio().size());
                     Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
                     sendBroadcast(setplaylist);
                     Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
@@ -301,7 +308,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
                 playlist.clear();
                 for (song songs : songlistalbums) {
-                    song s = new song(songs.getSong_id(),songs.getSong_title(),songs.getAlbum_id(),songs.getAlbum_name(), songs.getDownload_link(),songs.getLyricist(),songs.getTrack_no());
+                    song s = new song(songs.getSong_id(), songs.getSong_title(), songs.getAlbum_id(), songs.getAlbum_name(), songs.getDownload_link(), songs.getLyricist(), songs.getTrack_no());
                     playlist.add(s);
                 }
 
@@ -339,16 +346,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         if (!session.isLoggedIn()) {
 
             signIn();
-        }else {
-            HashMap<String,String> details = db.getUserDetails();
-            Toast.makeText(this, "Welcome back "+details.get("displayName"), Toast.LENGTH_SHORT).show();
+        } else {
+            HashMap<String, String> details = db.getUserDetails();
+            Toast.makeText(this, "Welcome back " + details.get("displayName"), Toast.LENGTH_SHORT).show();
             //logoutUser();
         }
 
         dbHandler = new DatabaseHandler(getApplicationContext());
         int noOfSongs = dbHandler.getNoOfSongs();
         int noOfAlbums = dbHandler.getNoOfAlbums();
-        Log.d(TAG, "onCreate: songs = "+noOfSongs+" albums = "+noOfAlbums);
+        Log.d(TAG, "onCreate: songs = " + noOfSongs + " albums = " + noOfAlbums);
 
         setUpLyricsPage();
 
@@ -379,31 +386,119 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         setNavigation();
         //Log.d(TAG, "onCreate: album name = "+dbHandler.getAlbumName(2));
-        if(noOfAlbums<1){
+        if (noOfAlbums < 1) {
             downloadAlbumDatabase();
         }
-        if(noOfSongs>0&&noOfAlbums>0){
-            Log.d(TAG, "onCreate: "+albumArts.getSize()+", "+ noOfAlbums);
-            if(dbHandler.getNumberOfImages()==noOfAlbums) {
+        if (noOfSongs > 0 && noOfAlbums > 0) {
+            Log.d(TAG, "onCreate: " + albumArts.getSize() + ", " + noOfAlbums);
+            if (dbHandler.getNumberOfImages() == noOfAlbums) {
                 pDialog.setMessage("Loading songs ...");
                 showDialog();
                 setUpImages();
                 setUpSongsAlbums();
-                Log.d(TAG, "dbhander: "+dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
+                Log.d(TAG, "dbhander: " + dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
                 setUp_favoritePanel();
-            }else {
+            } else {
                 pDialog.setMessage("Loading songs ...");
                 showDialog();
                 ArrayList<Integer> ids = dbHandler.getAlbumIds();
-                for(int a : ids) {
+                for (int a : ids) {
                     String imageLink = dbHandler.getImageLink(a);
-                    new DownloadImageTask(a,MainActivity.this).execute(imageLink);
+                    new DownloadImageTask(a, MainActivity.this).execute(imageLink);
                 }
 
             }
         }
 
+
+
+        // ATTENTION: This was auto-generated to handle app links.
+        handleIntent();
     }
+
+    public void handleIntent() {
+        Log.d(TAG, "calls: called handle");
+        Intent appLinkIntent = getIntent();
+        String appLinkAction = appLinkIntent.getAction();
+        Uri appLinkData = appLinkIntent.getData();
+        if(appLinkData != null){
+            String songId = appLinkData.getQueryParameter("song");
+            if(songId == null ){
+                return;
+            }
+
+            songId = songId.replaceAll("%20"," ");
+            StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+            song song = dbHandler.getSongBySongTitle(songId);
+            if (storageUtil.loadAudio() == null || totalSongs > storageUtil.loadAudio().size()) {
+                Log.d(TAG, "onItemClick: its null");
+                for (song songs : songList) {
+                    song s = new song(songs.getSong_id(), songs.getSong_title(), songs.getAlbum_id(), songs.getAlbum_name(), songs.getDownload_link(), songs.getLyricist(), songs.getTrack_no());
+                    playlist.add(s);
+                }
+                Log.d(TAG, "onItemClick: playlist = " + playlist.size());
+                int index = 0;
+                for (song s : playlist) {
+                    if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
+                        index = playlist.indexOf(s);
+                    }
+                }
+                storageUtil.storeAudio(playlist);
+                storageUtil.storeAudioIndex(index);
+                Log.d(TAG, "onItemClick: storage = " + storageUtil.loadAudio().size());
+                Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
+                sendBroadcast(setplaylist);
+                Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+                sendBroadcast(broadcastIntent);
+
+
+            } else {
+                int index = 0;
+                Log.i(TAG, "onItemClick: " + song.getSong_title() + " " + song.getAlbum_name());
+                ArrayList<song> array = new StorageUtil(getApplicationContext()).loadAudio();
+                for (song s : array) {
+                    if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
+                        Log.i(TAG, "onItemClick: " + s.getSong_title() + " " + s.getAlbum_name());
+                        index = array.indexOf(s);
+                        Log.i(TAG, "onItemClick: " + s.getSong_title() + " " + s.getAlbum_name() + " " + index);
+                    }
+                }
+                storageUtil.storeAudioIndex(index);
+                Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+                sendBroadcast(broadcastIntent);
+
+            }
+
+            
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent();
+    }
+    
+    public void share(View view){
+        if(player!=null) {
+            if (player.isPlaying() || player.isPaused()) {
+                Toast.makeText(this, "click share", Toast.LENGTH_SHORT).show();
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(Intent.ACTION_SEND);
+                String songName = player.getActiveSong().getSong_title();
+                songName = songName.replaceAll(" ","%20");
+                String link = AppController.getAppLink()+"?song="+songName;
+                sendIntent.putExtra(Intent.EXTRA_TEXT, link);
+                sendIntent.setType("text/plain");
+                startActivity(sendIntent);
+            }else {
+                Toast.makeText(this, "Play a song to share!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+
 
     public void setUp_favoritePanel(){
         up = (ImageView) findViewById(R.id.favup);

@@ -229,7 +229,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 albumName = c.getString(c.getColumnIndex(KEY_ALBUM_NAME));
             }
         }
-
+        if(c!=null){
+            c.close();
+        }
 
         return albumName;
     }
@@ -391,6 +393,36 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 String track_no = cursor.getString(cursor.getColumnIndex(KEY_TRACK_NO));
 
                 song sa = new song(song_id, song_title, id, album_name, download_link, lyricist, track_no);
+                s= sa;
+
+            }
+        }
+        // return user
+
+        if(cursor != null){
+            cursor.close();
+        }
+        return s;
+    }
+    public song getSongBySongTitle(String song_Title){
+        song s=null;
+        String selectQuery = "SELECT  * FROM " + TABLE_songs +" WHERE song_title = '"+song_Title+"'";
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        // Move to first row
+        //cursor.moveToFirst();
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                int sid = cursor.getInt(cursor.getColumnIndex(KEY_SONG_ID));
+                int id = cursor.getInt(cursor.getColumnIndex(KEY_ALBUM_ID));
+                String album_name = getAlbumName(id);
+                String song_title = cursor.getString(cursor.getColumnIndex(KEY_SONG_TITLE));
+                String download_link = cursor.getString(cursor.getColumnIndex(KEY_DOWNLOAD_LINK));
+                String lyricist = cursor.getString(cursor.getColumnIndex(KEY_LYRICIST));
+                String track_no = cursor.getString(cursor.getColumnIndex(KEY_TRACK_NO));
+
+                song sa = new song(sid, song_title, id, album_name, download_link, lyricist, track_no);
                 s= sa;
 
             }
