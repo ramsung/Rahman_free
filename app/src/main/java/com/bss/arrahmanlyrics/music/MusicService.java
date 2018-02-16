@@ -30,6 +30,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -378,24 +379,23 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 	private void buildNotification(PlaybackStatus playbackStatus) {
 
-		if (TextUtils.isEmpty(activeSong.getSong_title()) && TextUtils.isEmpty(activeSong.getAlbum_name())) {
+		/*if (TextUtils.isEmpty(activeSong.getSong_title()) && TextUtils.isEmpty(activeSong.getAlbum_name())) {
 			notificationLayout.setViewVisibility(R.id.media_titles, View.INVISIBLE);
 		} else {
 			notificationLayout.setViewVisibility(R.id.media_titles, View.VISIBLE);
 			notificationLayout.setTextViewText(R.id.title, activeSong.getSong_title());
 			notificationLayout.setTextViewText(R.id.text, activeSong.getAlbum_name());
 
-		}
+		}*/
 
-		if (TextUtils.isEmpty(activeSong.getSong_title()) && TextUtils.isEmpty(activeSong.getLyricist()) && TextUtils.isEmpty(activeSong.getAlbum_name())) {
-			notificationLayoutBig.setViewVisibility(R.id.media_titles, View.INVISIBLE);
-		} else {
-			notificationLayoutBig.setViewVisibility(R.id.media_titles, View.VISIBLE);
+
+
+			//notificationLayoutBig.setViewVisibility(R.id.media_titles, View.VISIBLE);
 			notificationLayoutBig.setTextViewText(R.id.title, activeSong.getSong_title());
-			notificationLayoutBig.setTextViewText(R.id.text, activeSong.getLyricist());
-			notificationLayoutBig.setTextViewText(R.id.text2, activeSong.getAlbum_name());
 
-		}
+			notificationLayoutBig.setTextViewText(R.id.textAlbumName, activeSong.getAlbum_name());
+
+
 		if(Build.VERSION.SDK_INT >=26){
 			NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);;
 
@@ -442,17 +442,18 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 			notificationLayoutBig.setImageViewBitmap(R.id.image,Icon);
 			notificationLayout.setImageViewBitmap(R.id.image,Icon);
-			Bitmap prev = BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.skip_previous_amber);
-			Bitmap next = BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.skip_next_amber);
-			Bitmap playPause = BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.pause_amber);
-			Bitmap close = BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.ic_close_black_24dp);
+
+			Bitmap prev = BitmapFactory.decodeResource(getResources(),R.drawable.skip_previous_amber);
+			Bitmap next = BitmapFactory.decodeResource(getResources(),R.drawable.skip_next_amber);
+			Bitmap playPause = BitmapFactory.decodeResource(getResources(),R.drawable.play_amber);
+			Bitmap close = BitmapFactory.decodeResource(getResources(),R.drawable.ic_close_black_24dp);
 
 			if(playbackStatus == PlaybackStatus.PAUSED){
-				playPause = BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.play_amber);
+				playPause = BitmapFactory.decodeResource(getResources(),R.drawable.pause_amber);
 			}
+			notificationLayoutBig.setImageViewBitmap(R.id.action_play_pause,playPause);
 
-
-			notificationLayout.setImageViewBitmap(R.id.action_prev, prev);
+			/*notificationLayout.setImageViewBitmap(R.id.action_prev, prev);
 			notificationLayout.setImageViewBitmap(R.id.action_next, next);
 			notificationLayout.setImageViewBitmap(R.id.action_play_pause, playPause);
 
@@ -465,11 +466,16 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			notificationLayoutBig.setViewVisibility(R.id.action_quit, View.VISIBLE);
 			notificationLayoutBig.setViewVisibility(R.id.action_prev, View.VISIBLE);
 			notificationLayoutBig.setViewVisibility(R.id.action_next, View.VISIBLE);
-			notificationLayoutBig.setViewVisibility(R.id.action_play_pause, View.VISIBLE);
+			notificationLayoutBig.setViewVisibility(R.id.action_play_pause, View.VISIBLE);*/
 
 			Intent intent = new Intent(this, MainActivity.class);
 			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			PendingIntent pendInt = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+			notificationLayoutBig.setOnClickPendingIntent(R.id.btnPause,play_pauseAction);
+			notificationLayoutBig.setOnClickPendingIntent(R.id.btnPrevious,playbackAction(3));
+			notificationLayoutBig.setOnClickPendingIntent(R.id.btnNext,playbackAction(2));
+
 
 			// Create a new Notification
 			notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this,id)
@@ -489,7 +495,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 					.setColor(getResources().getColor(R.color.colorPrimary))
 					// Set the large and small icons
-					.setContent(notificationLayout)
+					.setContent(notificationLayoutBig)
 					.setCustomBigContentView(notificationLayoutBig)
 					.setSmallIcon(android.R.drawable.stat_sys_headset)
 					.setLargeIcon(Icon)
@@ -498,17 +504,18 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 					// Set Notification content information
 					.setContentIntent(pendInt)
 					.setContentTitle(activeSong.getAlbum_name())
-					.setContentInfo(activeSong.getSong_title())
+					.setContentInfo(activeSong.getSong_title());
 					// Add playback actions
-					.addAction(R.drawable.skip_previous_amber, "", playbackAction(3))
-					.addAction(notificationAction, "", play_pauseAction)
-					.addAction(R.drawable.skip_next_amber, "", playbackAction(2));
+					//.addAction(R.drawable.skip_previous_amber, "", playbackAction(3))
+					//.addAction(notificationAction, "", play_pauseAction)
+					//.addAction(R.drawable.skip_next_amber, "", playbackAction(2));
 			if (playbackStatus == PlaybackStatus.PLAYING) {
 				notificationBuilder.setOngoing(true);
 			} else if (playbackStatus == PlaybackStatus.PAUSED) {
 				notificationBuilder.setOngoing(false);
 			}
-			((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
+			//((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
+			notifManager.notify(NOTIFICATION_ID,notificationBuilder.build());
 		}else {
 			int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
 			PendingIntent play_pauseAction = null;
@@ -745,11 +752,13 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			if (shuffleOn) {
 				StorageUtil storage = new StorageUtil(getApplicationContext());
 				playlist = getShuffledList(storage.loadAudio());
+				Log.d(TAG, "onItemClick: received playlist");
 				audioIndex = storage.loadAudioIndex();
 
 			} else {
 				StorageUtil storage = new StorageUtil(getApplicationContext());
 				playlist = storage.loadAudio();
+				Log.d(TAG, "onItemClick: received playlist");
 				audioIndex = storage.loadAudioIndex();
 			}
 

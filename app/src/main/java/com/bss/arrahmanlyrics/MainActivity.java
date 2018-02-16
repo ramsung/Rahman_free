@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -26,7 +27,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -46,7 +46,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -71,9 +70,7 @@ import com.bss.arrahmanlyrics.music.MusicService;
 import com.bss.arrahmanlyrics.utility.Helper;
 import com.bss.arrahmanlyrics.utility.RecyclerItemClickListener;
 import com.bss.arrahmanlyrics.utility.StorageUtil;
-
 import com.crashlytics.android.Crashlytics;
-
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
@@ -85,8 +82,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
@@ -95,17 +90,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -124,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private ProgressDialog Dialog;
 
 
+    boolean calledFromLink = false;
     ProgressBar bar;
 
     List<song> songList;
@@ -187,54 +174,131 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Log.d(TAG, "calls: on create");
         FirebaseInstanceId.getInstance().getToken();
         Fabric.with(this, new Crashlytics());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-
-        MobileAds.initialize(this, "ca-app-pub-7987343674758455~2523296928");
-        mInterstitialAd = new InterstitialAd(this);
-        mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
-        mInterstitialAd.loadAd(new AdRequest.Builder().addTestDevice("45AEA33662E36BBB9B11FE55E4EFA874").build());
-        mInterstitialAd.setAdListener(new AdListener() {
+        Handler h = new Handler();
+        Runnable r = new Runnable() {
             @Override
-            public void onAdLoaded() {
-                // Code to be executed when an ad finishes loading.
-                Log.i("Ads Interstitial", "onAdLoaded");
-            }
+            public void run() {
+                MobileAds.initialize(MainActivity.this, "ca-app-pub-7987343674758455~2523296928");
+                mInterstitialAd = new InterstitialAd(MainActivity.this);
+                mInterstitialAd.setAdUnitId("ca-app-pub-7987343674758455/6284132866");
+                mInterstitialAd.loadAd(new AdRequest.Builder().addTestDevice("45AEA33662E36BBB9B11FE55E4EFA874").build());
+                mInterstitialAd.setAdListener(new AdListener() {
+                    @Override
+                    public void onAdLoaded() {
+                        // Code to be executed when an ad finishes loading.
+                        Log.i("Ads Interstitial", "onAdLoaded");
+                    }
 
-            @Override
-            public void onAdFailedToLoad(int errorCode) {
-                // Code to be executed when an ad request fails.
-                Log.i("Ads Interstitial", "onAdFailedToLoad" + errorCode);
-            }
+                    @Override
+                    public void onAdFailedToLoad(int errorCode) {
+                        // Code to be executed when an ad request fails.
+                        Log.i("Ads Interstitial", "onAdFailedToLoad" + errorCode);
+                    }
 
-            @Override
-            public void onAdOpened() {
-                // Code to be executed when an ad opens an overlay that
-                // covers the screen.
-                Log.i("Ads Interstitial", "onAdOpened");
-            }
+                    @Override
+                    public void onAdOpened() {
+                        // Code to be executed when an ad opens an overlay that
+                        // covers the screen.
+                        Log.i("Ads Interstitial", "onAdOpened");
+                    }
 
-            @Override
-            public void onAdLeftApplication() {
-                // Code to be executed when the user has left the app.
-                Log.i("Ads Interstitial", "onAdLeftApplication");
-            }
+                    @Override
+                    public void onAdLeftApplication() {
+                        // Code to be executed when the user has left the app.
+                        Log.i("Ads Interstitial", "onAdLeftApplication");
+                    }
 
-            @Override
-            public void onAdClosed() {
-                // Code to be executed when when the user is about to return
-                // to the app after tapping on an ad.
-                Log.i("Ads Interstitial", "onAdClosed");
+                    @Override
+                    public void onAdClosed() {
+                        // Code to be executed when when the user is about to return
+                        // to the app after tapping on an ad.
+                        Log.i("Ads Interstitial", "onAdClosed");
+                    }
+                });
+
             }
-        });
+        };
+        h.post(r);
+
+
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+        mGoogleSignInClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this, this)
+                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
+                .build();
         db = new SQLiteSignInHandler(getApplicationContext());
+
+        // Session manager
+        session = new SessionManager(getApplicationContext());
+        if (!session.isLoggedIn()) {
+
+            signIn();
+
+        } else {
+            HashMap<String, String> details = db.getUserDetails();
+            Toast.makeText(this, "Welcome back " + details.get("displayName"), Toast.LENGTH_SHORT).show();
+
+
+            //logoutUser();
+        }
+        Log.d(TAG, "onCreate: before init");
+        init();
+        setNavigation();
+        setUpLyricsPage();
+
+
+        dbHandler = new DatabaseHandler(getApplicationContext());
+        int noOfSongs = dbHandler.getNoOfSongs();
+        int noOfAlbums = dbHandler.getNoOfAlbums();
+        Log.d(TAG, "onCreate: songs = " + noOfSongs + " albums = " + noOfAlbums);
+
+
+
+
+
+        //Log.d(TAG, "onCreate: album name = "+dbHandler.getAlbumName(2));
+        if (noOfAlbums < 1) {
+            downloadAlbumDatabase();
+        }
+        if (noOfSongs > 0 && noOfAlbums > 0) {
+            //Log.d(TAG, "onCreate: " + albumArts.getSize() + ", " + noOfAlbums);
+            if (dbHandler.getNumberOfImages() == noOfAlbums) {
+                pDialog.setMessage("Loading songs ...");
+                showDialog();
+                setUpImages();
+                //setUpSongsAlbums();
+                Log.d(TAG, "dbhander: " + dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
+
+            } else {
+                pDialog.setMessage("Loading songs ...");
+                showDialog();
+                ArrayList<Integer> ids = dbHandler.getAlbumIds();
+                for (int a : ids) {
+                    String imageLink = dbHandler.getImageLink(a);
+                    new DownloadImageTask(a, MainActivity.this).execute(imageLink);
+                }
+
+            }
+        }
+
+
+
+        // ATTENTION: This was auto-generated to handle app links.
+
+    }
+
+    public void init(){
+
         songList = new ArrayList<>();
         songListSearch = new ArrayList<>();
-        Intent intent = getIntent();
-        String action = intent.getAction();
-        Uri data = intent.getData();
         rv1 = (RecyclerView) findViewById(R.id.rv1);
         rv1.addItemDecoration(new DividerItemDecoration(getApplicationContext(), LinearLayoutManager.VERTICAL));
         rv1.setItemAnimator(new DefaultItemAnimator());
@@ -332,33 +396,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         Dialog = new ProgressDialog(this);
         Dialog.setCancelable(true);
 
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, this)
-                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
-                .build();
-
-
-        // Session manager
-        session = new SessionManager(getApplicationContext());
-        if (!session.isLoggedIn()) {
-
-            signIn();
-        } else {
-            HashMap<String, String> details = db.getUserDetails();
-            Toast.makeText(this, "Welcome back " + details.get("displayName"), Toast.LENGTH_SHORT).show();
-            //logoutUser();
-        }
-
-        dbHandler = new DatabaseHandler(getApplicationContext());
-        int noOfSongs = dbHandler.getNoOfSongs();
-        int noOfAlbums = dbHandler.getNoOfAlbums();
-        Log.d(TAG, "onCreate: songs = " + noOfSongs + " albums = " + noOfAlbums);
-
-        setUpLyricsPage();
-
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ImageButton menuLeft = (ImageButton) findViewById(R.id.menuleft);
         ImageButton menuRight = (ImageButton) findViewById(R.id.menuright);
@@ -384,45 +421,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             }
         });
 
-        setNavigation();
-        //Log.d(TAG, "onCreate: album name = "+dbHandler.getAlbumName(2));
-        if (noOfAlbums < 1) {
-            downloadAlbumDatabase();
-        }
-        if (noOfSongs > 0 && noOfAlbums > 0) {
-            Log.d(TAG, "onCreate: " + albumArts.getSize() + ", " + noOfAlbums);
-            if (dbHandler.getNumberOfImages() == noOfAlbums) {
-                pDialog.setMessage("Loading songs ...");
-                showDialog();
-                setUpImages();
-                setUpSongsAlbums();
-                Log.d(TAG, "dbhander: " + dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
-                setUp_favoritePanel();
-            } else {
-                pDialog.setMessage("Loading songs ...");
-                showDialog();
-                ArrayList<Integer> ids = dbHandler.getAlbumIds();
-                for (int a : ids) {
-                    String imageLink = dbHandler.getImageLink(a);
-                    new DownloadImageTask(a, MainActivity.this).execute(imageLink);
-                }
-
-            }
-        }
-
-
-
-        // ATTENTION: This was auto-generated to handle app links.
-        handleIntent();
     }
 
     public void handleIntent() {
+
         Log.d(TAG, "calls: called handle");
         Intent appLinkIntent = getIntent();
         String appLinkAction = appLinkIntent.getAction();
         Uri appLinkData = appLinkIntent.getData();
         if(appLinkData != null){
             String songId = appLinkData.getQueryParameter("song");
+            Log.d(TAG, "calls: song =  "+songId);
             if(songId == null ){
                 return;
             }
@@ -471,12 +480,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             
         }
+        calledFromLink = false;
+        Log.d(TAG, "calls: got false in handle itself");
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        calledFromLink = true;
         handleIntent();
     }
     
@@ -488,7 +500,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 sendIntent.setAction(Intent.ACTION_SEND);
                 String songName = player.getActiveSong().getSong_title();
                 songName = songName.replaceAll(" ","%20");
-                String link = AppController.getAppLink()+"?song="+songName;
+                String link = AppController.getAppLink()+"/?song="+songName;
                 sendIntent.putExtra(Intent.EXTRA_TEXT, link);
                 sendIntent.setType("text/plain");
                 startActivity(sendIntent);
@@ -515,10 +527,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
                 if (favoritePanel != null &&
                         (favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED || favoritePanel.getPanelState() == SlidingUpPanelLayout.PanelState.ANCHORED)) {
-                    if (mInterstitialAd.isLoaded()) {
-                        mInterstitialAd.show();
-                    } else {
-                        Log.d("TAG", "The interstitial wasn't loaded yet.");
+                    if(mInterstitialAd != null) {
+                        if (mInterstitialAd.isLoaded()) {
+                            mInterstitialAd.show();
+                        } else {
+                            Log.d("TAG", "The interstitial wasn't loaded yet.");
+                        }
                     }
                     up.setImageResource(R.drawable.down);
                 } else if (favoritePanel != null &&
@@ -688,7 +702,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private void setUpSongsAlbums() {
         StorageUtil storageUtil = new StorageUtil(getApplicationContext());
         storageUtil.clearCachedAudioPlaylist();
-        songList.clear();
         songList = dbHandler.getSongs();
         songAdapter = new SongAdapter(getApplicationContext(), songList);
         rv1.setAdapter(songAdapter);
@@ -978,10 +991,25 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     private void setUpImages() {
 
+        Handler handler = new Handler();
+        final Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                for(int a: dbHandler.getAlbumIds()){
+                    albumArts.setBitmaps(a,dbHandler.getImageBlob(a));
+                }
+                setUpSongsAlbums();
+                setUp_favoritePanel();
 
-        for(int a: dbHandler.getAlbumIds()){
-            albumArts.setBitmaps(a,dbHandler.getImageBlob(a));
-        }
+                    handleIntent();
+
+                }
+
+        };
+        handler.post(r);
+
+
+
     }
 
     private void downloadAlbumDatabase() {
@@ -1356,6 +1384,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             Intent playerIntent = new Intent(MainActivity.this, MusicService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+
             Log.i("bounded", "service bounded");
 
 
@@ -1793,7 +1822,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     Log.d(TAG, "onQueryTextChange: " + filteralbumlist.size());
                     songAdapter = new SongAdapter(getApplicationContext(), filteralbumlist);
                     rv1.setAdapter(songAdapter);
-                    Log.d(TAG, "setUpSongs: "+songList.size());
+                    Log.d(TAG, "setUpSongssetUpSongs: "+songList.size());
                     songAdapter.notifyDataSetChanged();
                 }
 
@@ -1904,7 +1933,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
        ++imageReqCom;
        if(imageReqCom==dbHandler.getNoOfAlbums()){
            setUpImages();
-           setUpSongsAlbums();
+           //setUpSongsAlbums();
 
            if(session.isLoggedIn()){
                getFavFromDatabase(db.getUserDetails().get("id"));
@@ -1983,6 +2012,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             }
         }
+        Log.d(TAG, "calls: "+calledFromLink);
+
         Log.i(TAG, "calls: on resume over");
     }
 
