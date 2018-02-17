@@ -54,7 +54,6 @@ import com.bss.arrahmanlyrics.Fragments.EnglishFragment;
 import com.bss.arrahmanlyrics.Fragments.FavFragment;
 import com.bss.arrahmanlyrics.Fragments.TamilFragment;
 import com.bss.arrahmanlyrics.Fragments.about;
-import com.bss.arrahmanlyrics.Fragments.apps;
 import com.bss.arrahmanlyrics.adapter.ExpandableListAdapterMysql;
 import com.bss.arrahmanlyrics.adapter.SongAdapter;
 import com.bss.arrahmanlyrics.albumArts.albumArts;
@@ -164,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     SlidingUpPanelLayout favoritePanel;
     FavFragment favFragment;
     about aboutFragment;
-    apps appsFragment;
+    //apps appsFragment;
 
     SearchView songsearch;
     SearchView albumsearch;
@@ -545,13 +544,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         favFragment = new FavFragment();
         aboutFragment = new about();
-        appsFragment = new apps();
+       // appsFragment = new apps();
 
         viewPager2 = (CustomViewPager) findViewById(R.id.rvg);
         favPageAdapter favPageAdapter = new favPageAdapter(getSupportFragmentManager());
         favPageAdapter.addFragment(favFragment, "Favorite");
         favPageAdapter.addFragment(aboutFragment, "About");
-        favPageAdapter.addFragment(appsFragment, "Apps");
+       // favPageAdapter.addFragment(appsFragment, "Apps");
 
 
         viewPager2.setAdapter(favPageAdapter);
@@ -566,9 +565,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     viewPager2.setCurrentItem(0);
                 } else if (item.getItemId() == R.id.navigation_notifications) {
                     viewPager2.setCurrentItem(1);
-                } else if (item.getItemId() == R.id.navigation_dashboard) {
+                }/* else if (item.getItemId() == R.id.navigation_dashboard) {
                     viewPager2.setCurrentItem(2);
-                }
+                }*/
                 updateNavigationBarState(item.getItemId());
 
                 return true;

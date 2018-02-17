@@ -5,7 +5,6 @@
     android:orientation="vertical"
     tools:context="com.bss.arrahmanlyrics.FavFragment">
 
-    <include layout="@layout/appsview" />
     <ScrollView
         android:id="@+id/scroll"
         android:layout_width="match_parent"
