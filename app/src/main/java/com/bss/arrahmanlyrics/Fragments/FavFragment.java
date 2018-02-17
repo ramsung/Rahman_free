@@ -97,8 +97,13 @@ public class FavFragment extends Fragment {
         rv3 = (RecyclerView) view.findViewById(R.id.rv3);
         db = new SQLiteSignInHandler(getContext());
         Log.d(TAG, "onCreateView: on fav");
-        favoriteSongList = ((MainActivity)getActivity()).dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id")));
-        Log.d(TAG, "onCreateView: "+favoriteSongList.size());
+        if(db.getUserDetails().get("id")!=null){
+            favoriteSongList = ((MainActivity)getActivity()).dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id")));
+
+        }else {
+            favoriteSongList = new ArrayList<>();
+        }
+         Log.d(TAG, "onCreateView: "+favoriteSongList.size());
         adapter = new FavoriteSongAdapter(getContext(),favoriteSongList,((MainActivity)getActivity()));
         rv3.setAdapter(adapter);
         rv3.addItemDecoration(new DividerItemDecoration(getContext(), LinearLayoutManager.VERTICAL));

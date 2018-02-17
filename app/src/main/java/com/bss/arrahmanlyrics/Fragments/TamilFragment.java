@@ -198,4 +198,8 @@ public class TamilFragment extends Fragment {
 		lyrics2.setText(text2);
 
 	}
+
+	public TextView getTextView(){
+		return lyrics1;
+	}
 }

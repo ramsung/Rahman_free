@@ -806,6 +806,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 			//Get the new media index form SharedPreferences
 			audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+			Log.d(TAG, "onItemClick: am in new song");
 			if (audioIndex != -1 && audioIndex < playlist.size()) {
 				//index is in a valid range
 				song s = new StorageUtil(getApplicationContext()).loadAudio().get(audioIndex);

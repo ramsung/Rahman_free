@@ -354,14 +354,18 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     public boolean insertFavorites(int user_id, int song_id) {
 
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(KEY_USER_ID, user_id);
-        contentValues.put(KEY_SONG_ID, song_id);
+        if(!isFavExists(user_id,song_id)){
+            SQLiteDatabase db = getWritableDatabase();
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(KEY_USER_ID, user_id);
+            contentValues.put(KEY_SONG_ID, song_id);
 
-        db.insert(TABLE_FAVORITE, null, contentValues);
-        Log.d(TAG, "insertFavorites: successfully added fav");
-        return true;
+            db.insert(TABLE_FAVORITE, null, contentValues);
+            Log.d(TAG, "insertFavorites: successfully added fav");
+            return true;
+        }
+
+        return false;
 
 
     }
@@ -587,5 +591,6 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         }
         return Albums;
     }
+
 
 }

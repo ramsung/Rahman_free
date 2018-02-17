@@ -22,6 +22,7 @@
     android:layout_height="match_parent"
 
     tools:context="com.bss.arrahmanlyrics.MainActivity">
+
     <include
         android:id="@+id/media_tabs"
         android:layout_width="match_parent"
@@ -74,7 +75,8 @@
             android:layout_weight="1.5"
             android:background="@android:color/transparent"
             android:onClick="share"
-            sothree:srcCompat="@drawable/ic_share_black_24dp" />
+            sothree:srcCompat="@drawable/ic_share_black_24dp"
+            tools:ignore="VectorDrawableCompat" />
 
         <TextView
             android:id="@+id/songname"

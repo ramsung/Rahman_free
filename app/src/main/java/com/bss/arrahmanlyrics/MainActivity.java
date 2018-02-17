@@ -14,8 +14,10 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
@@ -41,6 +43,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -83,6 +86,8 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingService;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
@@ -90,6 +95,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -109,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private ProgressDialog Dialog;
 
 
-    boolean calledFromLink = false;
+
     ProgressBar bar;
 
     List<song> songList;
@@ -178,6 +185,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         FirebaseInstanceId.getInstance().getToken();
         Fabric.with(this, new Crashlytics());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        Log.d("Firebase", "token "+ FirebaseInstanceId.getInstance().getToken());
 
         Handler h = new Handler();
         Runnable r = new Runnable() {
@@ -274,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 showDialog();
                 setUpImages();
                 //setUpSongsAlbums();
-                Log.d(TAG, "dbhander: " + dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
+                //Log.d(TAG, "dbhander: " + dbHandler.getFavorites(Integer.parseInt(db.getUserDetails().get("id"))));
 
             } else {
                 pDialog.setMessage("Loading songs ...");
@@ -390,7 +398,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         albumSongList = new HashMap<>();
 
         pDialog = new ProgressDialog(this);
-        pDialog.setCancelable(false);
+        pDialog.setCancelable(true);
 
         Dialog = new ProgressDialog(this);
         Dialog.setCancelable(true);
@@ -438,22 +446,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             songId = songId.replaceAll("%20"," ");
             StorageUtil storageUtil = new StorageUtil(getApplicationContext());
             song song = dbHandler.getSongBySongTitle(songId);
+            if(song==null){
+                Toast.makeText(player, songId+" is not found in our database", Toast.LENGTH_SHORT).show();
+                return;
+            }
             if (storageUtil.loadAudio() == null || totalSongs > storageUtil.loadAudio().size()) {
-                Log.d(TAG, "onItemClick: its null");
+                Log.d(TAG, "calls: its null");
                 for (song songs : songList) {
                     song s = new song(songs.getSong_id(), songs.getSong_title(), songs.getAlbum_id(), songs.getAlbum_name(), songs.getDownload_link(), songs.getLyricist(), songs.getTrack_no());
                     playlist.add(s);
                 }
-                Log.d(TAG, "onItemClick: playlist = " + playlist.size());
+                Log.d(TAG, "calls: playlist = " + playlist.size());
                 int index = 0;
                 for (song s : playlist) {
                     if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
                         index = playlist.indexOf(s);
+                        Log.d(TAG, "calls: "+s);
                     }
                 }
                 storageUtil.storeAudio(playlist);
                 storageUtil.storeAudioIndex(index);
-                Log.d(TAG, "onItemClick: storage = " + storageUtil.loadAudio().size());
+                Log.d(TAG, "calls: storage = " + storageUtil.loadAudio().size()+" service bond = "+serviceBound);
                 Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
                 sendBroadcast(setplaylist);
                 Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
@@ -462,13 +475,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             } else {
                 int index = 0;
-                Log.i(TAG, "onItemClick: " + song.getSong_title() + " " + song.getAlbum_name());
+                Log.i(TAG, "calls: " + song.getSong_title() + " " + song.getAlbum_name());
                 ArrayList<song> array = new StorageUtil(getApplicationContext()).loadAudio();
                 for (song s : array) {
                     if (s.getSong_title().equals(song.getSong_title()) && s.getAlbum_name().equals(song.getAlbum_name())) {
-                        Log.i(TAG, "onItemClick: " + s.getSong_title() + " " + s.getAlbum_name());
+                        Log.i(TAG, "calls: " + s.getSong_title() + " " + s.getAlbum_name());
                         index = array.indexOf(s);
-                        Log.i(TAG, "onItemClick: " + s.getSong_title() + " " + s.getAlbum_name() + " " + index);
+                        Log.i(TAG, "ca;;s: " + s.getSong_title() + " " + s.getAlbum_name() + " " + index);
                     }
                 }
                 storageUtil.storeAudioIndex(index);
@@ -479,7 +492,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             
         }
-        calledFromLink = false;
+        
         Log.d(TAG, "calls: got false in handle itself");
     }
 
@@ -487,20 +500,69 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        calledFromLink = true;
+
         handleIntent();
     }
     
     public void share(View view){
         if(player!=null) {
             if (player.isPlaying() || player.isPaused()) {
-                Toast.makeText(this, "click share", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, "click share", Toast.LENGTH_SHORT).show();
+                Bitmap bitmap;
+                Bitmap b ;
+
+                try {
+                    RelativeLayout layout = (RelativeLayout) findViewById(R.id.maincontent);
+
+                    layout.getRootView().setDrawingCacheEnabled(true);
+
+                    bitmap = Bitmap.createBitmap(layout.getRootView().getDrawingCache());
+                    layout.getRootView().setDrawingCacheEnabled(false);
+
+                }catch (Exception e){
+                    Toast.makeText(this, "something went wrong try again later", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+              if(bitmap==null){
+                  Toast.makeText(this, "something went wrong try again later", Toast.LENGTH_SHORT).show();
+                  return;
+              }
+
+
+
+                File mainDir = new File(
+                        getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share");
+
+                //If File is not present create directory
+                if (!mainDir.exists()) {
+                    if (mainDir.mkdir())
+                        Log.e("Create Directory", "Main Directory Created : " + mainDir);
+                }
+
+                File savefile = mainDir;
+
+
+                File dir = new File(savefile.getAbsolutePath());
+                if (!dir.exists())
+                    dir.mkdirs();
+                File file = new File(savefile.getAbsolutePath(), "song.jpg");
+                try {
+                    FileOutputStream fOut = new FileOutputStream(file);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+                    fOut.flush();
+                    fOut.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                Uri uri = Uri.fromFile(file);//Convert file path into Uri for sharing
                 Intent sendIntent = new Intent();
                 sendIntent.setAction(Intent.ACTION_SEND);
                 String songName = player.getActiveSong().getSong_title();
                 songName = songName.replaceAll(" ","%20");
                 String link = AppController.getAppLink()+"/?song="+songName;
                 sendIntent.putExtra(Intent.EXTRA_TEXT, link);
+                sendIntent.putExtra(Intent.EXTRA_STREAM,uri);
                 sendIntent.setType("text/plain");
                 startActivity(sendIntent);
             }else {
@@ -573,6 +635,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 return true;
             }
         });
+
     }
     private void updateNavigationBarState(int actionId) {
         Menu menu = bottomMenu.getMenu();
@@ -722,6 +785,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         totalSongs = songList.size();
         hideDialog();
+        //handleIntent();
         Log.d(TAG, "setUpSongsAlbums: dialog hidden");
         Log.d(TAG, "setUpSongs: "+songList.size());
     }
@@ -998,11 +1062,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     albumArts.setBitmaps(a,dbHandler.getImageBlob(a));
                 }
                 setUpSongsAlbums();
+
                 setUp_favoritePanel();
-
-                    handleIntent();
-
-                }
+            }
 
         };
         handler.post(r);
@@ -1269,14 +1331,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
                         // Inserting row in users table
                         db.addUser(Integer.parseInt(id),email,name);
+                        if(db.getUserDetails().get("id")!=null){
+                            getFavFromDatabase(db.getUserDetails().get("id"));
+                        }
 
                         // Launch main activity
 
                     } else {
                         // Error in login. Get the error message
                         String errorMsg = jObj.getString("error_msg");
-                        Toast.makeText(getApplicationContext(),
-                                errorMsg, Toast.LENGTH_LONG).show();
+                        //Toast.makeText(getApplicationContext(),
+                                //errorMsg, Toast.LENGTH_LONG).show();
                     }
                 } catch (JSONException e) {
                     // JSON error
@@ -1367,6 +1432,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             player.setMainCallbacks(MainActivity.this);
             update();
             serviceBound = true;
+            Log.d(TAG, "calls: now service bound true");
+            handleIntent();
 
         }
 
@@ -1384,7 +1451,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
-            Log.i("bounded", "service bounded");
+            Log.i("calls", "service bounded");
 
 
         }
@@ -1498,8 +1565,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         String tag_string_req = "get_fav";
 
-        pDialog.setMessage("Getting Favorite ...");
-        showDialog();
+
 
         StringRequest strReq = new StringRequest(Request.Method.POST,
                 AppConfig.GET_FAV, new Response.Listener<String>() {
@@ -1526,7 +1592,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     }
                     setUp_favoritePanel();
                     Log.d(TAG, "onResponse: "+jObj);
-                    hideDialog();
+                    //hideDialog();
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -2011,7 +2077,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             }
         }
-        Log.d(TAG, "calls: "+calledFromLink);
+
 
         Log.i(TAG, "calls: on resume over");
     }
