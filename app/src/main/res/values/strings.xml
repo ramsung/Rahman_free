@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Rahman Songs &amp; lyrics</string>
+    <string name="app_name">AR Rahman Songs &amp; lyrics</string>
     <string name="asset_statements" translatable="false">[{\n  \"relation\": [\"delegate_permission/common.handle_all_urls\"],\n  \"target\": {\n    \"namespace\": \"web\",\n    \"site\": \"https://arrahmanlyrics.beyonitysoftwares.in\",\n  }\n}]</string>
 </resources>
