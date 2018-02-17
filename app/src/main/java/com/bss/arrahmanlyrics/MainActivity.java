@@ -558,13 +558,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 Uri uri = Uri.fromFile(file);//Convert file path into Uri for sharing
                 Intent sendIntent = new Intent();
                 sendIntent.setAction(Intent.ACTION_SEND);
-                String songName = player.getActiveSong().getSong_title();
-                songName = songName.replaceAll(" ","%20");
+                song song = player.getActiveSong();
+                String songName = song.getSong_title().replaceAll(" ","%20");
                 String link = AppController.getAppLink()+"/?song="+songName;
                 sendIntent.putExtra(Intent.EXTRA_TEXT, link);
                 sendIntent.putExtra(Intent.EXTRA_STREAM,uri);
-                sendIntent.setType("text/plain");
-                startActivity(sendIntent);
+                sendIntent.setType("image/*");
+                sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(sendIntent,"Choose your loved one to share this song"));
             }else {
                 Toast.makeText(this, "Play a song to share!", Toast.LENGTH_SHORT).show();
             }
