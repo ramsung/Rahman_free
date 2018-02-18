@@ -2,6 +2,7 @@ package com.bss.arrahmanlyrics.adapter;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,8 @@ import com.bss.arrahmanlyrics.utility.Helper;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.bss.arrahmanlyrics.appconfig.AppController.TAG;
 
 /**
  * Created by mohan on 5/20/17.
@@ -51,6 +54,7 @@ public class FavoriteSongAdapter extends RecyclerView.Adapter<FavoriteSongAdapte
 	public void onBindViewHolder(MyViewHolder holder, int position) {
 		song actualsong = songlist.get(position);
 
+		Log.d(TAG, "calls: "+songlist.size());
 
 		holder.name.setText(Helper.FirstLetterCaps(actualsong.getSong_title()));
 		//holder.name.setText(actualsong.getSongTitle());

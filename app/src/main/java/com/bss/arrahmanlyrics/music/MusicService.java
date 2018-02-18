@@ -33,6 +33,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 import com.bss.arrahmanlyrics.BuildConfig;
 import com.bss.arrahmanlyrics.MainActivity;
@@ -40,6 +41,7 @@ import com.bss.arrahmanlyrics.R;
 import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.appconfig.AppController;
 import com.bss.arrahmanlyrics.model.song;
+import com.bss.arrahmanlyrics.utility.Helper;
 import com.bss.arrahmanlyrics.utility.StorageUtil;
 import com.danikula.videocache.CacheListener;
 import com.danikula.videocache.HttpProxyCacheServer;
@@ -391,13 +393,13 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 
 			//notificationLayoutBig.setViewVisibility(R.id.media_titles, View.VISIBLE);
-			notificationLayoutBig.setTextViewText(R.id.title, activeSong.getSong_title());
+			notificationLayoutBig.setTextViewText(R.id.title, Helper.FirstLetterCaps(activeSong.getSong_title()));
 
-			notificationLayoutBig.setTextViewText(R.id.textAlbumName, activeSong.getAlbum_name());
+			notificationLayoutBig.setTextViewText(R.id.textAlbumName, Helper.FirstLetterCaps(activeSong.getAlbum_name()));
 
 
 		if(Build.VERSION.SDK_INT >=26){
-			NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);;
+			NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
 			String name = "com.bss.arrahmanlyrics";
 			String id = "com.bss.arrahmanlyrics_01";
@@ -971,6 +973,11 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 			StorageUtil storage = new StorageUtil(getApplicationContext());
 			playlist = getShuffledList(storage.loadAudio());
+			if(playlist==null){
+				Toast.makeText(this, "not playlist to shuffle", Toast.LENGTH_SHORT).show();
+				return;
+
+			}
 			if (mediaPlayer != null) {
 				if (isPlaying() || mediaPlayer.getCurrentPosition() > 0) {
 					for (song sg : playlist) {
@@ -987,6 +994,11 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		} else {
 			StorageUtil storage = new StorageUtil(getApplicationContext());
 			playlist = storage.loadAudio();
+			if(playlist==null){
+				Toast.makeText(this, "not playlist to shuffle", Toast.LENGTH_SHORT).show();
+				return;
+
+			}
 			if (mediaPlayer != null) {
 				if (isPlaying() || mediaPlayer.getCurrentPosition() > 0) {
 					for (song sg : playlist) {
