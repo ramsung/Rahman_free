@@ -2,8 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.bss.arrahmanlyrics">
 
-    <uses-permission android:name="android.permission.INTERNET"></uses-permission>
+    <uses-permission android:name="android.permission.INTERNET"> </uses-permission>
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+
 
     <application
         android:allowBackup="true"
@@ -16,6 +18,20 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name="com.mopub.mobileads.MoPubActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+
+        <activity android:name="com.mopub.mobileads.MraidActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+
+        <activity android:name="com.mopub.common.MoPubBrowser"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+
+        <activity android:name="com.mopub.mobileads.MraidVideoPlayerActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+
+        <activity android:name="com.mopub.mobileads.RewardedMraidActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
         <meta-data
             android:name="asset_statements"
             android:resource="@string/asset_statements" />
@@ -40,9 +56,17 @@
                     />
             </intent-filter>
 
+
+
         </activity>
 
-        <service android:name=".music.MusicService"></service>
+
+
+
+
+
+
+        <service android:name=".music.MusicService"> </service>
         <service android:name=".Notification.PushNotificaiton">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
