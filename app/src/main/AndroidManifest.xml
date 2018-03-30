@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.bss.arrahmanlyrics">
 
     <uses-permission android:name="android.permission.INTERNET"> </uses-permission>
@@ -19,20 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.mopub.mobileads.MoPubActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"/>
 
-        <activity android:name="com.mopub.mobileads.MraidActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"/>
-
-        <activity android:name="com.mopub.common.MoPubBrowser"
-            android:configChanges="keyboardHidden|orientation|screenSize"/>
-
-        <activity android:name="com.mopub.mobileads.MraidVideoPlayerActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"/>
-
-        <activity android:name="com.mopub.mobileads.RewardedMraidActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"/>
         <meta-data
             android:name="asset_statements"
             android:resource="@string/asset_statements" />
@@ -61,12 +49,6 @@
 
         </activity>
 
-
-
-
-
-
-
         <service android:name=".music.MusicService"> </service>
         <service android:name=".Notification.PushNotificaiton">
             <intent-filter>
@@ -87,6 +69,8 @@
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="e52ee8ae31cd1341706602670106cddbf6cdd286" />
+
+        <!-- Ads-->
         <activity android:name="com.mopub.mobileads.MoPubActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"/>
 
@@ -101,6 +85,26 @@
 
         <activity android:name="com.mopub.mobileads.RewardedMraidActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"/>
+<!-- Inmobi ads-->
+        <activity
+            android:name="com.inmobi.rendering.InMobiAdActivity"
+            android:configChanges="keyboardHidden|orientation|keyboard|smallestScreenSize|screenSize|screenLayout"
+            android:hardwareAccelerated="true"
+            android:resizeableActivity="false"
+            android:theme="@android:style/Theme.NoTitleBar"
+            tools:ignore="UnusedAttribute" />
+
+        <receiver
+            android:name="com.inmobi.commons.core.utilities.uid.ImIdShareBroadCastReceiver"
+            android:enabled="true"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.inmobi.share.id"/>
+            </intent-filter>
+        </receiver>
+
+
     </application>
 
 
