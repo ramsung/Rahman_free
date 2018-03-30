@@ -12,6 +12,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.bss.arrahmanlyrics.utility.mediaCache;
 import com.danikula.videocache.HttpProxyCacheServer;
+import com.google.firebase.FirebaseApp;
 
 public class AppController extends Application {
 
@@ -27,6 +28,7 @@ public class AppController extends Application {
 		super.onCreate();
 		StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
 		StrictMode.setVmPolicy(builder.build());
+		FirebaseApp.initializeApp(getApplicationContext());
 		mInstance = this;
 	}
 

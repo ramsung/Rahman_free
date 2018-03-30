@@ -92,6 +92,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -503,7 +504,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
                 builder.setTitle("Trending Song");
 
-              
+
                 builder.setMessage("Would you like to play the song \""+Helper.FirstLetterCaps(songIdFromFirebase)+"\" now");
 
                 builder.setNegativeButton("Don't Play",
@@ -1829,6 +1830,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         }
     }
+
 
     @Override
     public void showDialog(song s) {
