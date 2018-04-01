@@ -418,9 +418,9 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		NotificationCompat.Action next = new NotificationCompat.Action(R.drawable.skip_next_amber,"",playbackAction(2));
 		NotificationCompat.Action playpause = new NotificationCompat.Action(notificationAction,"",play_pauseAction);
 
-		Intent intent = new Intent(this, MainActivity.class);
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        Intent intent = new Intent(MusicService.this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendInt = PendingIntent.getActivity(MusicService.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
 
 
@@ -450,11 +450,10 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 											  return super.setShowActionsInCompactView(actions);
 										  }
 									  })
-									  .setCategory(Intent.CATEGORY_APP_MUSIC)
-									  .setPriority(NotificationCompat.PRIORITY_HIGH)
+									  .setPriority(NotificationCompat.PRIORITY_MAX)
+									  .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 									  .setShowWhen(false)
 									  .setAutoCancel(false)
-									  .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 									  .setSound(null)
 									  .setLargeIcon(icon)
 									  .setContentTitle(Helper.FirstLetterCaps(activeSong.getSong_title()))
@@ -463,7 +462,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 									  .addAction(prev)
 									  .addAction(playpause)
 									  .addAction(next)
-									  .setContentIntent(pendingIntent);
+									  .setContentIntent(pendInt);
 							  if (playbackStatus == PlaybackStatus.PLAYING) {
 								  mBuilder.setOngoing(true);
 							  } else if (playbackStatus == PlaybackStatus.PAUSED) {
