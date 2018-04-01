@@ -60,13 +60,17 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
+import com.androidnetworking.AndroidNetworking;
+import com.androidnetworking.common.Priority;
+import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.JSONObjectRequestListener;
 import com.bss.arrahmanlyrics.Fragments.EnglishFragment;
 import com.bss.arrahmanlyrics.Fragments.FavFragment;
 import com.bss.arrahmanlyrics.Fragments.TamilFragment;
 import com.bss.arrahmanlyrics.Fragments.about;
 import com.bss.arrahmanlyrics.adapter.ExpandableListAdapterMysql;
 import com.bss.arrahmanlyrics.adapter.SongAdapter;
-import com.bss.arrahmanlyrics.albumArts.albumArts;
+//import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.appconfig.AppConfig;
 import com.bss.arrahmanlyrics.appconfig.AppController;
 import com.bss.arrahmanlyrics.custom_pages.CustomViewPager;
@@ -122,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private SQLiteSignInHandler db;
     private ProgressDialog pDialog;
     private ProgressDialog Dialog;
-
+    int updateBoth = 0;
 
     ProgressBar bar;
 
@@ -265,12 +269,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             //logoutUser();
         }
         Log.d(TAG, "onCreate: before init");
+        dbHandler = new DatabaseHandler(getApplicationContext());
         init();
         setNavigation();
         setUpLyricsPage();
+        String local_time_songs = dbHandler.getUpdateDetails("songs");
+        String local_time_albums = dbHandler.getUpdateDetails("albums");
+        showDialog();
+        getupdatetime(local_time_songs,local_time_albums);
 
 
-        dbHandler = new DatabaseHandler(getApplicationContext());
+/*
+
         int noOfSongs = dbHandler.getNoOfSongs();
         int noOfAlbums = dbHandler.getNoOfAlbums();
         Log.d(TAG, "onCreate: songs = " + noOfSongs + " albums = " + noOfAlbums);
@@ -292,14 +302,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             } else {
                 pDialog.setMessage("Loading songs ...");
                 showDialog();
-                ArrayList<Integer> ids = dbHandler.getAlbumIds();
+                setUpImages();
+               /* ArrayList<Integer> ids = dbHandler.getAlbumIds();
                 for (int a : ids) {
                     String imageLink = dbHandler.getImageLink(a);
                     new DownloadImageTask(a, MainActivity.this).execute(imageLink);
                 }
+                if (session.isLoggedIn()) {
+                    getFavFromDatabase(db.getUserDetails().get("id"));
+                }
 
             }
-        }
+        }*/
 
 
         // ATTENTION: This was auto-generated to handle app links.
@@ -370,6 +384,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         rv2 = (ExpandableListView) findViewById(R.id.rv2);
         rv2.setAdapter(albumAdapter);
+
         rv2.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
             public boolean onChildClick(ExpandableListView expandableListView, View view, int i, int i1, long l) {
@@ -432,6 +447,226 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             }
         });
 
+
+    }
+
+
+    private void getupdatetime(String local_time_songs,String local_time_albums) {
+
+        AndroidNetworking.post(AppConfig.GET_UPDATE_TIME)
+                .addBodyParameter("updated", "checking update")
+                .setTag("update time")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsJSONObject(new JSONObjectRequestListener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(TAG, "onResponse: "+response);
+                        try {
+                            JSONArray update = response.getJSONArray("update");
+                            //Log.d(TAG, "onResponse: length = "+update.length());
+                            for(int a =0;a<update.length();a++){
+                                JSONObject object = update.getJSONObject(a);
+
+                                String table_name = String.valueOf(object.get("table_name"));
+                                String remote_time = String.valueOf(object.get("update_time"));
+                                if(table_name.equals("albums")){
+
+                                    long local_time_long = Long.parseLong(local_time_albums);
+                                    long remote_time_long = Long.parseLong(remote_time);
+                                    if(local_time_albums.equals("0")){
+                                             updateBoth++;
+                                            getAlbums(table_name,remote_time,local_time_albums);
+
+
+                                    }else if(remote_time_long>local_time_long){
+                                            updateBoth++;
+                                            getAlbums(table_name, remote_time, local_time_albums);
+
+                                    }else {
+                                        updateBoth++;
+                                        callSetUp();
+                                    }
+                                }else if(table_name.equals("songs")){
+
+                                    long local_time_long = Long.parseLong(local_time_songs);
+                                    long remote_time_long = Long.parseLong(remote_time);
+                                    if(local_time_songs.equals("0")){
+                                        updateBoth++;
+                                            getSongs(table_name,remote_time,local_time_songs);
+
+
+                                    }else if(remote_time_long>local_time_long){
+                                        updateBoth++;
+
+                                            getSongs(table_name, remote_time, local_time_songs);
+
+
+
+
+                                    }else {
+                                        updateBoth++;
+                                        callSetUp();
+                                    }
+                                }
+
+                            }
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+
+                    }
+                    @Override
+                    public void onError(ANError error) {
+                        Log.e(TAG, "onError: "+error.getErrorDetail());
+                        Toast.makeText(getApplicationContext(), "error loading songs from the database", Toast.LENGTH_SHORT).show();
+                        hideDialog();
+                        //setVisibleFalse();
+                        //isLoading = false;
+                    }
+                });
+    }
+
+    private void callSetUp() {
+        if(updateBoth==2){
+            setUpSongs();
+            if (session.isLoggedIn()) {
+                getFavFromDatabase(db.getUserDetails().get("id"));
+            }
+        }
+    }
+
+    public void getAlbums(String table_name, String remote_time, String local_time){
+        AndroidNetworking.post(AppConfig.GET_ALBUMS)
+                .addBodyParameter("artist", "1")
+                .setTag("albums")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsJSONObject(new JSONObjectRequestListener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(TAG, "onResponse: "+response);
+
+                        try {
+
+                            if(response.getString("error").equals("false")) {
+
+                                if(!local_time.equals("0")){
+                                    dbHandler.deleteRecords(table_name);
+                                }
+                                JSONArray array = response.getJSONArray("albums");
+                                for (int a = 0; a < array.length(); a++) {
+                                    JSONObject object = array.getJSONObject(a);
+                                    String album_id = object.getString("album_id");
+                                    String album_name = object.getString("album_name");
+                                    String hero = object.getString("hero");
+                                    String heroin = object.getString("heroin");
+                                    String language = object.getString("language");
+                                    String year = object.getString("year");
+                                    String image_link = image_path + album_id + ".png";
+                                    if(dbHandler.insertAlbums(album_id, album_name, hero, heroin, language, year, image_link)){
+
+                                    }else {
+                                        Log.d(TAG, "onResponse: error inserting albums in local database");
+                                    }
+
+
+                                }
+                                callSetUp();
+                                if(local_time.equals("0")){
+                                    dbHandler.insertUpdate(table_name,remote_time);
+                                }else {
+                                    dbHandler.updateUpdateTable(table_name,remote_time);
+                                }
+                                Log.d(TAG, "onResponse: length " + array.length());
+
+                            }else {
+                                Toast.makeText(getApplicationContext(), "Failed to get albums from database", Toast.LENGTH_SHORT).show();
+
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+
+
+                    }
+                    @Override
+                    public void onError(ANError error) {
+                        Log.e(TAG, "onError: "+error.getErrorDetail());
+                        Toast.makeText(getApplicationContext(), "error loading albums from the database", Toast.LENGTH_SHORT).show();
+
+                        //isLoading = false;
+                    }
+                });
+    }
+
+    public void getSongs(String table_name, String remote_time, String local_time){
+        AndroidNetworking.post(AppConfig.GET_ALL_SONGS)
+                .addBodyParameter("songs", "all")
+                .setTag("songs")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsJSONObject(new JSONObjectRequestListener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(TAG, "onResponse: "+response);
+
+                        try {
+
+                            if(response.getString("error").equals("false")) {
+
+                                if(!local_time.equals("0")){
+                                    dbHandler.deleteRecords(table_name);
+                                }
+                                JSONArray array = response.getJSONArray("songs");
+                                for (int a = 0; a < array.length(); a++) {
+                                    JSONObject object = array.getJSONObject(a);
+                                    String song_id = object.getString("song_id");
+                                    String id = object.getString("album_id");
+                                    String song_title = object.getString("song_title");
+                                    String download_link = object.getString("download_link");
+                                    String lyricist = object.getString("lyricist");
+                                    String track_no = object.getString("track_no");
+
+                                    if(dbHandler.insertSongs(song_id, id, song_title, download_link, lyricist, track_no)){
+
+                                    }else {
+                                        Log.d(TAG, "onResponse: error inserting albums in local database");
+                                    }
+
+
+                                }
+                                callSetUp();
+                                if(local_time.equals("0")){
+                                    dbHandler.insertUpdate(table_name,remote_time);
+                                }else {
+                                    dbHandler.updateUpdateTable(table_name,remote_time);
+                                }
+                                Log.d(TAG, "onResponse: length " + array.length());
+
+                            }else {
+                                Log.d(TAG, "onResponse: failed to get songs from database");
+                                Toast.makeText(getApplicationContext(), "Failed to get albums from database", Toast.LENGTH_SHORT).show();
+
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+
+
+                    }
+                    @Override
+                    public void onError(ANError error) {
+                        Log.e(TAG, "onError: "+error.getErrorDetail());
+                        Toast.makeText(getApplicationContext(), "error loading albums from the database", Toast.LENGTH_SHORT).show();
+
+                        //isLoading = false;
+                    }
+                });
     }
 
     public void handleIntent() {
@@ -606,6 +841,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
     public void setUp_favoritePanel() {
+        Log.d(TAG, "setUp_favoritePanel: called favorite");
         up = (ImageView) findViewById(R.id.favup);
 
 
@@ -934,89 +1170,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     }
 
 
-    private void downloadSongDatabase(final String album_id) {
 
-        String tag_string_req = "req_songs";
-
-        pDialog.setMessage("Loading songs ...");
-        showDialog();
-
-        StringRequest strReq = new StringRequest(Request.Method.POST,
-                AppConfig.GET_SONGS, new Response.Listener<String>() {
-
-            @Override
-            public void onResponse(String response) {
-                //Log.d(TAG, "Albums Response: " + response.toString());
-
-
-                //Log.d(TAG, "onResponse: "+response);
-                try {
-                    JSONObject jObj = new JSONObject(response);
-                    boolean error = jObj.getBoolean("error");
-
-                    JSONArray array = jObj.getJSONArray("songs");
-                    for (int a = 0; a < array.length(); a++) {
-                        JSONObject object = array.getJSONObject(a);
-                        String song_id = object.getString("song_id");
-                        String id = object.getString("album_id");
-                        String song_title = object.getString("song_title");
-                        String download_link = object.getString("download_link");
-                        String lyricist = object.getString("lyricist");
-                        String track_no = object.getString("track_no");
-
-
-                        dbHandler.insertSongs(song_id, id, song_title, download_link, lyricist, track_no);
-
-
-                    }
-                    //Log.d(TAG, "onResponse: "+jObj);
-                    Log.d(TAG, "onResponse: " + (--request));
-                    if (request == 0) {
-                        ArrayList<Integer> ids = dbHandler.getAlbumIds();
-                        for (int a : ids) {
-                            String imageLink = dbHandler.getImageLink(a);
-                            new DownloadImageTask(a, MainActivity.this).execute(imageLink);
-                        }
-
-                        //setUpSongsAlbums();
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }, new Response.ErrorListener() {
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "Download song: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_LONG).show();
-                //signinTry();
-                hideDialog();
-                Log.d(TAG, "onErrorResponse: dialog hidden");
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting params to register url
-                Map<String, String> params = new HashMap<String, String>();
-
-
-                params.put("album_id", album_id);
-
-
-                return params;
-            }
-
-
-        };
-
-        // Adding request to request queue
-        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
-        Log.d(TAG, "downloadSongDatabase: " + (++request));
-    }
 
 
     private void downloadLyrics(final song song_id) {
@@ -1089,15 +1243,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         Log.d(TAG, "downloadSongDatabase: " + (++request));
     }
 
-    private void setUpImages() {
+    private void setUpSongs() {
 
         Handler handler = new Handler();
         final Runnable r = new Runnable() {
             @Override
             public void run() {
-                for (int a : dbHandler.getAlbumIds()) {
+               /* for (int a : dbHandler.getAlbumIds()) {
                     albumArts.setBitmaps(a, dbHandler.getImageBlob(a));
-                }
+                }*/
                 setUpSongsAlbums();
 
                 setUp_favoritePanel();
@@ -1109,103 +1263,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     }
 
-    private void downloadAlbumDatabase() {
 
-        String tag_string_req = "req_albums";
-
-        pDialog.setMessage("Loading Albums ...");
-        showDialog();
-
-        StringRequest strReq = new StringRequest(Request.Method.POST,
-                AppConfig.GET_ALBUMS, new Response.Listener<String>() {
-
-            @Override
-            public void onResponse(String response) {
-                //Log.d(TAG, "Albums Response: " + response.toString());
-
-
-                // Log.d(TAG, "onResponse: "+response);
-                try {
-                    JSONObject jObj = new JSONObject(response);
-                    boolean error = jObj.getBoolean("error");
-                   /* if (!error) {
-                        // User successfully stored in MySQL
-                        // Now store the user in sqlite
-                        /*String id = jObj.getString("id");
-
-                        JSONObject user = jObj.getJSONObject("user");
-                        //int id = user.getInt("id");
-                        String name = user.getString("displayName");
-                        String email = user.getString("email");
-
-                        // Inserting row in users table
-                        db.addUser(Integer.parseInt(id) ,email,name);
-
-                        Toast.makeText(getApplicationContext(), "User successfully registered. Try login now!", Toast.LENGTH_LONG).show();
-
-
-                        checkLogin(email);
-                        Log.d(TAG, "onResponse: "+jObj);
-                    } else {
-
-                        // Error occurred in registration. Get the error
-                        // message
-                        String errorMsg = jObj.getString("error_msg");
-                        Log.e(TAG, "onResponse: "+errorMsg);
-                    }*/
-                    JSONArray array = jObj.getJSONArray("albums");
-                    for (int a = 0; a < array.length(); a++) {
-                        JSONObject object = array.getJSONObject(a);
-                        String album_id = object.getString("album_id");
-                        String album_name = object.getString("album_name");
-                        String hero = object.getString("hero");
-                        String heroin = object.getString("heroin");
-                        String language = object.getString("language");
-                        String year = object.getString("year");
-                        String image_link = image_path + album_id + ".png";
-
-                        dbHandler.insertAlbums(album_id, album_name, hero, heroin, language, year, image_link);
-                    }
-                    ArrayList<Integer> ids = dbHandler.getAlbumIds();
-                    for (int a : ids) {
-                        downloadSongDatabase(String.valueOf(a));
-                    }
-                    //setUpSongsAlbums();
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }, new Response.ErrorListener() {
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "download album: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_LONG).show();
-                //signinTry();
-                hideDialog();
-                Log.d(TAG, "onErrorResponse: dialog hidden");
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting params to register url
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("artist", "1");
-
-
-                return params;
-            }
-
-        };
-
-        // Adding request to request queue
-        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
-    }
 
     //Google Sign in
     private void signIn() {
@@ -1544,6 +1602,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 break;
             }
             case R.id.shuffle: {
+                StorageUtil storage = new StorageUtil(getApplicationContext());
+                ArrayList<song> playlist = (storage.loadAudio());
+                if(playlist==null){
+                    Toast.makeText(this, "no playlist to shuffle", Toast.LENGTH_SHORT).show();
+                    return;
+
+                }
                 if (player != null) {
                     if (player.isShuffleOn()) {
                         player.setShuffleOnOff(false);
@@ -1623,7 +1688,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
                             dbHandler.insertFavorites(user_id, song_id);
+
                         }
+
+                        setUp_favoritePanel();
                     }
 
 
@@ -1987,7 +2055,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     }
 
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+    /*private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         int id;
         Activity activity;
 
@@ -2027,9 +2095,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             checkTaskComplete();
 
         }
-    }
+    }*/
 
-    public void checkTaskComplete() {
+    /*public void checkTaskComplete() {
         ++imageReqCom;
         if (imageReqCom == dbHandler.getNoOfAlbums()) {
             setUpImages();
@@ -2040,7 +2108,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             }
 
         }
-    }
+    }*/
 
 
     public class favPageAdapter extends FragmentPagerAdapter {

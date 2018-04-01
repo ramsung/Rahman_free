@@ -30,6 +30,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String TABLE_songs = "songs";
     private static final String TABLE_IMAGES = "images";
     private static final String TABLE_FAVORITE = "favorite";
+    private static final String TABLE_UPDATE = "updatedetails";
 
     //album
     private static final String KEY_ALBUM_ID = "album_id";
@@ -52,6 +53,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String KEY_LYRICIST = "lyricist";
     private static final String KEY_TRACK_NO = "track_no";
 
+
+    //update
+    private static final String KEY_TABLE_NAME = "table_name";
+    private static final String KEY_UPDATE_TIME = "timestamp";
 
     //images
     private static final String KEY_IMAGE_BLOB = "image";
@@ -79,13 +84,13 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         String CREATE_IMAGE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_IMAGES +" ("+ KEY_ALBUM_ID + " INTEGER UNIQUE, "+ KEY_IMAGE_BLOB +" BLOB)";
 
         String CREATE_FAVORITE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_FAVORITE +" ("+KEY_USER_ID+ " INTEGER, "+KEY_SONG_ID + " INTEGER)";
-
+        String CREATE_UPDATE_TABLE = "CREATE TABLE IF NOT EXISTS "+TABLE_UPDATE +" (" +KEY_TABLE_NAME+ " varchar(50) UNIQUE, "+KEY_UPDATE_TIME+ " DATETIME)";
         db.execSQL(CREATE_ALBUMS_TABLE);
         db.execSQL(CREATE_LANGUAGE_TABLE);
         db.execSQL(CREATE_SONGS_TABLE);
         db.execSQL(CREATE_IMAGE_TABLE);
         db.execSQL(CREATE_FAVORITE_TABLE);
-
+        db.execSQL(CREATE_UPDATE_TABLE);
 
     }
 
@@ -131,7 +136,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     }
 
-    public boolean insertImage(String album_id,byte[] bytearray){
+   /* public boolean insertImage(String album_id,byte[] bytearray){
         SQLiteDatabase db = getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(KEY_ALBUM_ID,album_id);
@@ -139,7 +144,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         db.insert(TABLE_IMAGES,null,contentValues);
 
         return true;
-    }
+    }*/
 
     public byte[] getImageBlob(int album_id){
         byte[] array = null;
@@ -591,6 +596,54 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         }
         return Albums;
     }
+    public boolean insertUpdate(String table_name, String timestamp) {
 
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(KEY_TABLE_NAME, table_name);
+        contentValues.put(KEY_UPDATE_TIME, timestamp);
+
+        db.insert(TABLE_UPDATE, null, contentValues);
+        return true;
+
+
+    }
+
+    public String getUpdateDetails(String table_name) {
+
+        String timestamp = "0";
+        SQLiteDatabase db = getReadableDatabase();
+        String st = "SELECT "+KEY_UPDATE_TIME+" FROM " + TABLE_UPDATE + " WHERE "+KEY_TABLE_NAME+" = '" + table_name + "'";
+        //Log.d(TAG, "getUpdateDetails: "+st);
+        Cursor c = db.rawQuery(st, null);
+        if (c != null) {
+            while (c.moveToNext()) {
+                timestamp = c.getString(c.getColumnIndex(KEY_UPDATE_TIME));
+            }
+        }
+        if(c!=null){
+            c.close();
+        }
+
+        return timestamp;
+
+
+    }
+    public boolean updateUpdateTable(String table_name, String timestamp) {
+
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(KEY_UPDATE_TIME, timestamp);
+
+        db.update(TABLE_UPDATE, contentValues,KEY_TABLE_NAME+" = ?",new String[]{table_name});
+        return true;
+
+
+    }
+    public void deleteRecords(String table_name){
+        SQLiteDatabase db = getWritableDatabase();
+        db.execSQL("delete from "+ table_name);
+        db.close();
+    }
 
 }

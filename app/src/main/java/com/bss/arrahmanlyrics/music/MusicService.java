@@ -1,5 +1,6 @@
 package com.bss.arrahmanlyrics.music;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -21,8 +22,11 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -43,6 +47,12 @@ import com.bss.arrahmanlyrics.appconfig.AppController;
 import com.bss.arrahmanlyrics.model.song;
 import com.bss.arrahmanlyrics.utility.Helper;
 import com.bss.arrahmanlyrics.utility.StorageUtil;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.danikula.videocache.CacheListener;
 import com.danikula.videocache.HttpProxyCacheServer;
 
@@ -51,6 +61,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 import static android.content.ContentValues.TAG;
 
@@ -98,7 +109,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	private boolean mPlayOnFocusGain;
 
 	private boolean mAudioNoisyReceiverRegistered;
-
+	final String image_path = "https://beyonitysoftwares.cf/arts/";
 
 	private int mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
 	private AudioManager audioManager;
@@ -381,6 +392,116 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 	private void buildNotification(PlaybackStatus playbackStatus) {
 
+
+		int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
+		PendingIntent play_pauseAction = null;
+
+		//Build a new notification according to the current state of the MediaPlayer
+		if (playbackStatus == PlaybackStatus.PLAYING) {
+			notificationAction = R.drawable.pause_amber;
+			//create the pause action
+			play_pauseAction = playbackAction(1);
+		} else if (playbackStatus == PlaybackStatus.PAUSED) {
+			notificationAction = R.drawable.play_amber;
+			//create the play action
+			play_pauseAction = playbackAction(0);
+		}
+		CharSequence name = "rahman";
+		String description = ("AR Rahman Songs and Lyrics");
+		String CHANNEL_ID = "com.bss.arrahmanlyrics";
+		NotificationCompat.Action prev = new NotificationCompat.Action(R.drawable.skip_previous_amber,"",playbackAction(3));
+		NotificationCompat.Action next = new NotificationCompat.Action(R.drawable.skip_next_amber,"",playbackAction(2));
+		NotificationCompat.Action playpause = new NotificationCompat.Action(notificationAction,"",play_pauseAction);
+
+		Intent intent = new Intent(this, MainActivity.class);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+
+		RequestOptions requestOptions = new RequestOptions();
+		requestOptions.placeholder(R.mipmap.ic_launcher);
+		requestOptions.diskCacheStrategy(DiskCacheStrategy.ALL);
+		requestOptions.error(R.mipmap.ic_launcher);
+		Glide.with(getApplicationContext())
+				.setDefaultRequestOptions(requestOptions)
+				.asBitmap()
+				.load(image_path + activeSong.getAlbum_id()+ ".png")
+				.into(new SimpleTarget<Bitmap>(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL) {
+						  @Override
+						  public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+
+							  Bitmap icon = resource;
+							  NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(MusicService.this, CHANNEL_ID)
+									  .setSmallIcon(R.mipmap.ic_launcher_foreground)
+									  .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle(){
+										  @Override
+										  public android.support.v4.media.app.NotificationCompat.MediaStyle setShowCancelButton(boolean show) {
+											  return super.setShowCancelButton(true);
+										  }
+
+										  @Override
+										  public android.support.v4.media.app.NotificationCompat.MediaStyle setShowActionsInCompactView(int... actions) {
+											  return super.setShowActionsInCompactView(actions);
+										  }
+									  })
+									  .setCategory(Intent.CATEGORY_APP_MUSIC)
+									  .setPriority(NotificationCompat.PRIORITY_HIGH)
+									  .setShowWhen(false)
+									  .setAutoCancel(false)
+									  .setSound(null)
+									  .setLargeIcon(icon)
+									  .setContentTitle(Helper.FirstLetterCaps(activeSong.getSong_title()))
+									  .setColor(ContextCompat.getColor(getApplicationContext(), R.color.primary))
+									  .setContentText(Helper.FirstLetterCaps(activeSong.getAlbum_name()))
+									  .addAction(prev)
+									  .addAction(playpause)
+									  .addAction(next)
+									  .setContentIntent(pendingIntent);
+							  if (playbackStatus == PlaybackStatus.PLAYING) {
+								  mBuilder.setOngoing(true);
+							  } else if (playbackStatus == PlaybackStatus.PAUSED) {
+								  mBuilder.setOngoing(false);
+							  }
+							  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+								  // Create the NotificationChannel, but only on API 26+ because
+								  // the NotificationChannel class is new and not in the support library
+								  Log.d(TAG, "buildNotification: am here");
+
+								  @SuppressLint("WrongConstant") NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT);
+								  channel.setDescription(description);
+								  channel.setSound(null,null);
+								  // Register the channel with the system
+
+
+								  NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+								  notifManager.createNotificationChannel(channel);
+// notificationId is a unique int for each notification that you must define
+								  notifManager.notify(NOTIFICATION_ID, mBuilder.build());
+								  if (playbackStatus == PlaybackStatus.PLAYING) {
+									  mBuilder.setOngoing(true);
+								  } else if (playbackStatus == PlaybackStatus.PAUSED) {
+									  mBuilder.setOngoing(false);
+								  }
+
+							  }else if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
+								  NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+								  // notificationId is a unique int for each notification that you must define
+								  notifManager.notify(NOTIFICATION_ID, mBuilder.build());
+
+							  }
+						  }
+
+
+
+
+					  });
+
+
+
+
+
+
 		/*if (TextUtils.isEmpty(activeSong.getSong_title()) && TextUtils.isEmpty(activeSong.getAlbum_name())) {
 			notificationLayout.setViewVisibility(R.id.media_titles, View.INVISIBLE);
 		} else {
@@ -390,6 +511,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 		}*/
 
+		/*
 
 
 			//notificationLayoutBig.setViewVisibility(R.id.media_titles, View.VISIBLE);
@@ -398,64 +520,76 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			notificationLayoutBig.setTextViewText(R.id.textAlbumName, Helper.FirstLetterCaps(activeSong.getAlbum_name()));
 
 
-		if(Build.VERSION.SDK_INT >=26){
-			NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+		RequestOptions requestOptions = new RequestOptions();
+		requestOptions.placeholder(R.mipmap.ic_launcher);
+		requestOptions.diskCacheStrategy(DiskCacheStrategy.ALL);
+		requestOptions.error(R.mipmap.ic_launcher);
 
-			String name = "com.bss.arrahmanlyrics";
-			String id = "com.bss.arrahmanlyrics_01";
-			String des = "Rahman music palyer";
+		Glide.with(getApplicationContext())
+				.setDefaultRequestOptions(requestOptions)
+				.asBitmap()
+				.load(image_path + activeSong.getAlbum_id()+ ".png")
+				.into(new SimpleTarget<Bitmap>(80, 80) {
+					@Override
+					public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+						notificationLayoutBig.setImageViewBitmap(R.id.image,resource);
+						if(Build.VERSION.SDK_INT >=26){
+							NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
-			NotificationChannel channel = notifManager.getNotificationChannel(id);
-			if(channel == null){
-				channel = new NotificationChannel(id,name,NotificationManager.IMPORTANCE_LOW);
-				channel.setDescription(des);
-				channel.enableLights(true);
-				channel.setSound(null,null);
-				channel.setVibrationPattern(null);
-				channel.enableVibration(false);
-				channel.setShowBadge(false);
-				channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-				notifManager.createNotificationChannel(channel);
-			}
-			int notificationAction = R.drawable.pause_amber;//needs to be initialized
-			PendingIntent play_pauseAction = null;
+							String name = "com.bss.arrahmanlyrics";
+							String id = "com.bss.arrahmanlyrics_01";
+							String des = "Rahman music palyer";
 
-			//Build a new notification according to the current state of the MediaPlayer
-			if (playbackStatus == PlaybackStatus.PLAYING) {
-				notificationAction = R.drawable.pause_amber;
-				//create the pause action
-				play_pauseAction = playbackAction(1);
-			} else if (playbackStatus == PlaybackStatus.PAUSED) {
-				notificationAction = R.drawable.play_amber;
-				//create the play action
-				play_pauseAction = playbackAction(0);
-			}
+							NotificationChannel channel = notifManager.getNotificationChannel(id);
+							if(channel == null){
+								channel = new NotificationChannel(id,name,NotificationManager.IMPORTANCE_LOW);
+								channel.setDescription(des);
+								channel.enableLights(true);
+								channel.setSound(null,null);
+								channel.setVibrationPattern(null);
+								channel.enableVibration(false);
+								channel.setShowBadge(false);
+								channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+								notifManager.createNotificationChannel(channel);
+							}
+							int notificationAction = R.drawable.pause_amber;//needs to be initialized
+							PendingIntent play_pauseAction = null;
 
-			Bitmap Icon;
-			if(albumArts.getBitmap(activeSong.getAlbum_id())!= null){
-				Log.d(TAG, "buildNotification: getting icon"+activeSong.getAlbum_id());
-				Icon = albumArts.getBitmap(activeSong.getAlbum_id());
-			}else {
-				Icon = BitmapFactory.decodeResource(getResources(),
-						R.drawable.ic_launcher);
-				Log.d(TAG, "build: getting icon"+activeSong.getAlbum_id());
-			}
-			//replace with your own image
+							//Build a new notification according to the current state of the MediaPlayer
+							if (playbackStatus == PlaybackStatus.PLAYING) {
+								notificationAction = R.drawable.pause_amber;
+								//create the pause action
+								play_pauseAction = playbackAction(1);
+							} else if (playbackStatus == PlaybackStatus.PAUSED) {
+								notificationAction = R.drawable.play_amber;
+								//create the play action
+								play_pauseAction = playbackAction(0);
+							}
 
-			notificationLayoutBig.setImageViewBitmap(R.id.image,Icon);
-			notificationLayout.setImageViewBitmap(R.id.image,Icon);
+							Bitmap Icon;
 
-			Bitmap prev = BitmapFactory.decodeResource(getResources(),R.drawable.skip_previous_amber);
-			Bitmap next = BitmapFactory.decodeResource(getResources(),R.drawable.skip_next_amber);
-			Bitmap playPause = BitmapFactory.decodeResource(getResources(),R.drawable.play_amber);
-			Bitmap close = BitmapFactory.decodeResource(getResources(),R.drawable.ic_close_black_24dp);
 
-			if(playbackStatus == PlaybackStatus.PAUSED){
-				playPause = BitmapFactory.decodeResource(getResources(),R.drawable.pause_amber);
-			}
-			notificationLayoutBig.setImageViewBitmap(R.id.action_play_pause,playPause);
+							Icon = BitmapFactory.decodeResource(getResources(),
+									R.drawable.ic_launcher);
+							Log.d(TAG, "build: getting icon"+activeSong.getAlbum_id());
 
-			/*notificationLayout.setImageViewBitmap(R.id.action_prev, prev);
+							//replace with your own image
+
+
+							//notificationLayoutBig.setImageViewBitmap(R.id.image,Icon);
+							notificationLayout.setImageViewBitmap(R.id.image,Icon);
+
+							Bitmap prev = BitmapFactory.decodeResource(getResources(),R.drawable.skip_previous_amber);
+							Bitmap next = BitmapFactory.decodeResource(getResources(),R.drawable.skip_next_amber);
+							Bitmap playPause = BitmapFactory.decodeResource(getResources(),R.drawable.play_amber);
+							Bitmap close = BitmapFactory.decodeResource(getResources(),R.drawable.ic_close_black_24dp);
+
+							if(playbackStatus == PlaybackStatus.PAUSED){
+								playPause = BitmapFactory.decodeResource(getResources(),R.drawable.pause_amber);
+							}
+							notificationLayoutBig.setImageViewBitmap(R.id.action_play_pause,playPause);
+
+			notificationLayout.setImageViewBitmap(R.id.action_prev, prev);
 			notificationLayout.setImageViewBitmap(R.id.action_next, next);
 			notificationLayout.setImageViewBitmap(R.id.action_play_pause, playPause);
 
@@ -468,124 +602,130 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			notificationLayoutBig.setViewVisibility(R.id.action_quit, View.VISIBLE);
 			notificationLayoutBig.setViewVisibility(R.id.action_prev, View.VISIBLE);
 			notificationLayoutBig.setViewVisibility(R.id.action_next, View.VISIBLE);
-			notificationLayoutBig.setViewVisibility(R.id.action_play_pause, View.VISIBLE);*/
+			notificationLayoutBig.setViewVisibility(R.id.action_play_pause, View.VISIBLE);
 
-			Intent intent = new Intent(this, MainActivity.class);
-			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			PendingIntent pendInt = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+							Intent intent = new Intent(MusicService.this, MainActivity.class);
+							intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+							PendingIntent pendInt = PendingIntent.getActivity(MusicService.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-			notificationLayoutBig.setOnClickPendingIntent(R.id.btnPause,play_pauseAction);
-			notificationLayoutBig.setOnClickPendingIntent(R.id.btnPrevious,playbackAction(3));
-			notificationLayoutBig.setOnClickPendingIntent(R.id.btnNext,playbackAction(2));
-
-
-			// Create a new Notification
-			notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this,id)
+							notificationLayoutBig.setOnClickPendingIntent(R.id.btnPause,play_pauseAction);
+							notificationLayoutBig.setOnClickPendingIntent(R.id.btnPrevious,playbackAction(3));
+							notificationLayoutBig.setOnClickPendingIntent(R.id.btnNext,playbackAction(2));
 
 
-					.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-					.setCategory(Intent.CATEGORY_APP_MUSIC)
-					.setPriority(Notification.PRIORITY_DEFAULT)
-					// Set the Notification style
-					.setStyle(new NotificationCompat.Style() {
-						@Override
-						public void setBuilder(NotificationCompat.Builder builder) {
-							super.setBuilder(builder);
+							// Create a new Notification
+							notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(MusicService.this,id)
+
+
+									.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+									.setCategory(Intent.CATEGORY_APP_MUSIC)
+									.setPriority(Notification.PRIORITY_DEFAULT)
+									// Set the Notification style
+									.setStyle(new NotificationCompat.Style() {
+										@Override
+										public void setBuilder(NotificationCompat.Builder builder) {
+											super.setBuilder(builder);
+										}
+									})
+
+
+									.setColor(getResources().getColor(R.color.colorPrimary))
+									// Set the large and small icons
+									.setContent(notificationLayoutBig)
+									.setCustomBigContentView(notificationLayoutBig)
+									.setSmallIcon(android.R.drawable.stat_sys_headset)
+									.setLargeIcon(Icon)
+									.setShowWhen(false)
+									.setAutoCancel(false)
+									// Set Notification content information
+									.setContentIntent(pendInt)
+									.setContentTitle(activeSong.getAlbum_name())
+									.setContentInfo(activeSong.getSong_title());
+							// Add playback actions
+							//.addAction(R.drawable.skip_previous_amber, "", playbackAction(3))
+							//.addAction(notificationAction, "", play_pauseAction)
+							//.addAction(R.drawable.skip_next_amber, "", playbackAction(2));
+							if (playbackStatus == PlaybackStatus.PLAYING) {
+								notificationBuilder.setOngoing(true);
+							} else if (playbackStatus == PlaybackStatus.PAUSED) {
+								notificationBuilder.setOngoing(false);
+							}
+							//((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
+							notifManager.notify(NOTIFICATION_ID,notificationBuilder.build());
+						}else {
+							int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
+							PendingIntent play_pauseAction = null;
+
+							//Build a new notification according to the current state of the MediaPlayer
+							if (playbackStatus == PlaybackStatus.PLAYING) {
+								notificationAction = android.R.drawable.ic_media_pause;
+								//create the pause action
+								play_pauseAction = playbackAction(1);
+							} else if (playbackStatus == PlaybackStatus.PAUSED) {
+								notificationAction = android.R.drawable.ic_media_play;
+								//create the play action
+								play_pauseAction = playbackAction(0);
+							}
+
+							Bitmap Icon;
+							if(albumArts.getBitmap(activeSong.getAlbum_id())!= null){
+								Log.d(TAG, "buildNotification: getting icon"+activeSong.getAlbum_id());
+								Icon = albumArts.getBitmap(activeSong.getAlbum_id());
+							}else {
+								Icon = BitmapFactory.decodeResource(getResources(),
+										R.drawable.ic_launcher);
+								Log.d(TAG, "build: getting icon"+activeSong.getAlbum_id());
+							}
+							//replace with your own image
+
+							Intent intent = new Intent(MusicService.this, MainActivity.class);
+							intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+							PendingIntent pendInt = PendingIntent.getActivity(MusicService.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+							// Create a new Notification
+							notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(MusicService.this,"rahman")
+
+									.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+									.setCategory(Intent.CATEGORY_APP_MUSIC)
+									.setPriority(Notification.PRIORITY_DEFAULT)
+									// Set the Notification style
+									.setStyle(new NotificationCompat.Style() {
+										@Override
+										public void setBuilder(NotificationCompat.Builder builder) {
+											super.setBuilder(builder);
+										}
+									})
+
+
+									.setColor(getResources().getColor(R.color.colorPrimary))
+									// Set the large and small icons
+
+									.setSmallIcon(android.R.drawable.stat_sys_headset)
+									.setLargeIcon(resource)
+									.setShowWhen(false)
+									.setAutoCancel(false)
+									// Set Notification content information
+									.setContentIntent(pendInt)
+									.setContentTitle(activeSong.getAlbum_name())
+									.setContentInfo(activeSong.getSong_title())
+									// Add playback actions
+									.addAction(android.R.drawable.ic_media_previous, "", playbackAction(3))
+									.addAction(notificationAction, "", play_pauseAction)
+									.addAction(android.R.drawable.ic_media_next, "", playbackAction(2));
+							if (playbackStatus == PlaybackStatus.PLAYING) {
+								notificationBuilder.setOngoing(true);
+							} else if (playbackStatus == PlaybackStatus.PAUSED) {
+								notificationBuilder.setOngoing(false);
+							}
+							((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
+
 						}
-					})
+					}
 
 
-					.setColor(getResources().getColor(R.color.colorPrimary))
-					// Set the large and small icons
-					.setContent(notificationLayoutBig)
-					.setCustomBigContentView(notificationLayoutBig)
-					.setSmallIcon(android.R.drawable.stat_sys_headset)
-					.setLargeIcon(Icon)
-					.setShowWhen(false)
-					.setAutoCancel(false)
-					// Set Notification content information
-					.setContentIntent(pendInt)
-					.setContentTitle(activeSong.getAlbum_name())
-					.setContentInfo(activeSong.getSong_title());
-					// Add playback actions
-					//.addAction(R.drawable.skip_previous_amber, "", playbackAction(3))
-					//.addAction(notificationAction, "", play_pauseAction)
-					//.addAction(R.drawable.skip_next_amber, "", playbackAction(2));
-			if (playbackStatus == PlaybackStatus.PLAYING) {
-				notificationBuilder.setOngoing(true);
-			} else if (playbackStatus == PlaybackStatus.PAUSED) {
-				notificationBuilder.setOngoing(false);
-			}
-			//((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
-			notifManager.notify(NOTIFICATION_ID,notificationBuilder.build());
-		}else {
-			int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
-			PendingIntent play_pauseAction = null;
+				});
 
-			//Build a new notification according to the current state of the MediaPlayer
-			if (playbackStatus == PlaybackStatus.PLAYING) {
-				notificationAction = android.R.drawable.ic_media_pause;
-				//create the pause action
-				play_pauseAction = playbackAction(1);
-			} else if (playbackStatus == PlaybackStatus.PAUSED) {
-				notificationAction = android.R.drawable.ic_media_play;
-				//create the play action
-				play_pauseAction = playbackAction(0);
-			}
-
-			Bitmap Icon;
-			if(albumArts.getBitmap(activeSong.getAlbum_id())!= null){
-				Log.d(TAG, "buildNotification: getting icon"+activeSong.getAlbum_id());
-				Icon = albumArts.getBitmap(activeSong.getAlbum_id());
-			}else {
-				Icon = BitmapFactory.decodeResource(getResources(),
-						R.drawable.ic_launcher);
-				Log.d(TAG, "build: getting icon"+activeSong.getAlbum_id());
-			}
-			//replace with your own image
-
-			Intent intent = new Intent(this, MainActivity.class);
-			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			PendingIntent pendInt = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-			// Create a new Notification
-			notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this,"rahman")
-
-					.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-					.setCategory(Intent.CATEGORY_APP_MUSIC)
-					.setPriority(Notification.PRIORITY_DEFAULT)
-					// Set the Notification style
-					.setStyle(new NotificationCompat.Style() {
-						@Override
-						public void setBuilder(NotificationCompat.Builder builder) {
-							super.setBuilder(builder);
-						}
-					})
-
-
-					.setColor(getResources().getColor(R.color.colorPrimary))
-					// Set the large and small icons
-
-					.setSmallIcon(android.R.drawable.stat_sys_headset)
-					.setLargeIcon(Icon)
-					.setShowWhen(false)
-					.setAutoCancel(false)
-					// Set Notification content information
-					.setContentIntent(pendInt)
-					.setContentTitle(activeSong.getAlbum_name())
-					.setContentInfo(activeSong.getSong_title())
-					// Add playback actions
-					.addAction(android.R.drawable.ic_media_previous, "", playbackAction(3))
-					.addAction(notificationAction, "", play_pauseAction)
-					.addAction(android.R.drawable.ic_media_next, "", playbackAction(2));
-			if (playbackStatus == PlaybackStatus.PLAYING) {
-				notificationBuilder.setOngoing(true);
-			} else if (playbackStatus == PlaybackStatus.PAUSED) {
-				notificationBuilder.setOngoing(false);
-			}
-			((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
-
-		}
+*/
 
 	}
 
@@ -728,6 +868,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 		try {
 			// Set the data source to the mediaFile location
+
 			mediaPlayer.setDataSource(setProxyUrl(activeSong.getDownload_link()));
 			Log.i(TAG, "initMediaPlayer: " + activeSong.getDownload_link());
 		} catch (IOException e) {
@@ -974,7 +1115,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			StorageUtil storage = new StorageUtil(getApplicationContext());
 			playlist = getShuffledList(storage.loadAudio());
 			if(playlist==null){
-				Toast.makeText(this, "not playlist to shuffle", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "no playlist to shuffle", Toast.LENGTH_SHORT).show();
 				return;
 
 			}
@@ -995,7 +1136,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 			StorageUtil storage = new StorageUtil(getApplicationContext());
 			playlist = storage.loadAudio();
 			if(playlist==null){
-				Toast.makeText(this, "not playlist to shuffle", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "no playlist to shuffle", Toast.LENGTH_SHORT).show();
 				return;
 
 			}

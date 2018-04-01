@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.utility.Helper;
+import com.bumptech.glide.Glide;
 
 import static android.content.ContentValues.TAG;
 
@@ -30,7 +31,7 @@ public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
 	MainActivity activity;
 	// child data in format of header title, child title
 	private HashMap<String, List<song>> _listDataChild;
-
+	final String image_path = "https://beyonitysoftwares.cf/arts/";
 	public ExpandableListAdapterMysql(Context context, List<albums> listDataHeader,
                                       HashMap<String, List<song>> listChildData, MainActivity activity) {
 		this._context = context;
@@ -108,7 +109,8 @@ public class ExpandableListAdapterMysql extends BaseExpandableListAdapter {
 		ImageView thumbnail = (ImageView) convertView.findViewById(R.id.albumimg);
 		title.setText((Helper.FirstLetterCaps(album.getAlbum_name())));
 		count.setText(album.getSonglist().size() + " songs");
-		thumbnail.setImageBitmap(albumArts.getBitmap(album.getAlbum_id()));
+		Glide.with(_context).load(image_path + album.getAlbum_id()+ ".png").into(thumbnail);
+		//thumbnail.setImageBitmap(albumArts.getBitmap(album.getAlbum_id()));
 		//Glide.with(context).load(album.getImageString()).into(holder.thumbnail);
 		//thumbnail.setImageBitmap(activity.getImageBitmap(album.getAlbum_name()));
 

@@ -17,6 +17,7 @@ import com.bss.arrahmanlyrics.R;
 import com.bss.arrahmanlyrics.albumArts.albumArts;
 import com.bss.arrahmanlyrics.model.song;
 import com.bss.arrahmanlyrics.utility.Helper;
+import com.bumptech.glide.Glide;
 
 
 import java.io.File;
@@ -34,7 +35,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder>{
 	private Context mContext;
 	private List<song> songlist;
 	MainActivity activity;
-
+	final String image_path = "https://beyonitysoftwares.cf/arts/";
 	public SongAdapter(Context mContext, List<song> songlist) {
 		this.mContext = mContext;
 		this.songlist = songlist;
@@ -63,7 +64,8 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder>{
 		//holder.name.setText(actualsong.getSongTitle());
 		//holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
 		//holder.imageView.setImageBitmap(activity.getImageBitmap(actualsong.getMovietitle()));
-		holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
+		//holder.imageView.setImageBitmap(albumArts.getBitmap(actualsong.getAlbum_id()));
+		Glide.with(mContext).load(image_path + actualsong.getAlbum_id()+ ".png").into(holder.imageView);
 		holder.lyricist.setText("Lyricist: " + Helper.FirstLetterCaps(actualsong.getLyricist()));
 		holder.movietitle.setText("Movie: " + Helper.FirstLetterCaps(actualsong.getAlbum_name()));
 

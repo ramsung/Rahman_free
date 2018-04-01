@@ -13,6 +13,10 @@ public class AppConfig {
 	//server song request
 	public static String GET_SONGS= "https://beyonitysoftwares.cf/android/songs.php";
 
+	//server all song request
+	public static String GET_ALL_SONGS= "https://beyonitysoftwares.cf/android/allSongs.php";
+
+
 	//server lyrics request
 	public static String GET_LYRICS= "https://beyonitysoftwares.cf/android/lyrics.php";
 
@@ -24,6 +28,10 @@ public class AppConfig {
 
 	//server get favorites
 	public static String GET_FAV= "https://beyonitysoftwares.cf/android/getFav.php";
+
+
+	public static String GET_UPDATE_TIME= "https://beyonitysoftwares.cf/android/getUpdateTime.php";
+
 
 
 
