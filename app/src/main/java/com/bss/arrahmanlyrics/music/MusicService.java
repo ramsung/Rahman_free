@@ -122,8 +122,8 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	private static boolean ignoreAudioFocus = false;
 	private PhoneStateListener phoneStateListener;
 
-	final RemoteViews notificationLayout = new RemoteViews("com.bss.arrahmanlyrics", R.layout.notification);
-	final RemoteViews notificationLayoutBig = new RemoteViews("com.bss.arrahmanlyrics", R.layout.notification_big);
+	//final RemoteViews notificationLayout = new RemoteViews("com.bss.arrahmanlyrics", R.layout.notification);
+	//final RemoteViews notificationLayoutBig = new RemoteViews("com.bss.arrahmanlyrics", R.layout.notification_big);
 	public static final String ACTION_PLAY = "com.bss.arrahmanlyrics.ACTION_PLAY";
 	public static final String ACTION_PAUSE = "com.bss.arrahmanlyrics.ACTION_PAUSE";
 	public static final String ACTION_PREVIOUS = "com.bss.arrahmanlyrics.ACTION_PREVIOUS";
