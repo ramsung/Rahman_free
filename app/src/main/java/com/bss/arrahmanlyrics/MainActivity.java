@@ -183,6 +183,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     about aboutFragment;
     //apps appsFragment;
 
+    String titleFromFirebase = "";
+    String desFromfirebase="";
+
     SearchView songsearch;
     SearchView albumsearch;
 
@@ -521,7 +524,31 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                     @Override
                     public void onError(ANError error) {
                         Log.e(TAG, "onError: "+error.getErrorDetail());
-                        Toast.makeText(getApplicationContext(), "error loading songs from the database", Toast.LENGTH_SHORT).show();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+                        builder.setTitle("Error While Connecting");
+                        builder.setMessage("oops Looks like network issues make sure your internet connection is on and try again... ");
+                        builder.setNegativeButton("Quit",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int which) {
+                                        System.exit(1);
+                                    }
+                                });
+                        builder.setPositiveButton("Try again",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int which) {
+
+                                        String local_time_songs = dbHandler.getUpdateDetails("songs");
+                                        String local_time_albums = dbHandler.getUpdateDetails("albums");
+                                        showDialog();
+                                        getupdatetime(local_time_songs,local_time_albums);
+
+                                    }
+                                });
+
+                        builder.show();
                         hideDialog();
                         //setVisibleFalse();
                         //isLoading = false;
@@ -671,9 +698,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     public void handleIntent() {
         String songIdFromFirebase = "";
-        if (getIntent().getStringExtra("song") != null) {
+        if (getIntent().getStringExtra("song") != null&&getIntent().getStringExtra("des")!=null&&getIntent().getStringExtra("title")!=null) {
             Log.d(TAG, "onCreate: " + getIntent().getStringExtra("song"));
             songIdFromFirebase = getIntent().getStringExtra("song");
+            desFromfirebase = getIntent().getStringExtra("des");
+            titleFromFirebase = getIntent().getStringExtra("title");
         }else if(getIntent().getStringExtra("update")!=null){
 
             try {
@@ -732,15 +761,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             }
         }else {
-            if (getIntent().getStringExtra("song") != null) {
+            if (getIntent().getStringExtra("song") != null&&!titleFromFirebase.equals("")&&!desFromfirebase.equals("")) {
 
                 
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
-                builder.setTitle("Trending Song");
+                builder.setTitle(titleFromFirebase);
 
 
-                builder.setMessage("Would you like to play the song \""+Helper.FirstLetterCaps(songIdFromFirebase)+"\" now");
+                builder.setMessage(desFromfirebase);
 
                 builder.setNegativeButton("Don't Play",
                         new DialogInterface.OnClickListener() {

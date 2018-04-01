@@ -22,6 +22,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
@@ -36,7 +37,9 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.RemoteViews;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bss.arrahmanlyrics.BuildConfig;
@@ -55,6 +58,7 @@ import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 import com.danikula.videocache.CacheListener;
 import com.danikula.videocache.HttpProxyCacheServer;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
 import java.io.File;
 import java.io.IOException;
@@ -125,6 +129,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 	public static final String ACTION_PREVIOUS = "com.bss.arrahmanlyrics.ACTION_PREVIOUS";
 	public static final String ACTION_NEXT = "com.bss.arrahmanlyrics.ACTION_NEXT";
 	public static final String ACTION_STOP = "com.bss.arrahmanlyrics.ACTION_STOP";
+
 
 	@Override
 	public void onCacheAvailable(File cacheFile, String url, int percentsAvailable) {
@@ -418,6 +423,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
 
+
 		RequestOptions requestOptions = new RequestOptions();
 		requestOptions.placeholder(R.mipmap.ic_launcher);
 		requestOptions.diskCacheStrategy(DiskCacheStrategy.ALL);
@@ -448,6 +454,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 									  .setPriority(NotificationCompat.PRIORITY_HIGH)
 									  .setShowWhen(false)
 									  .setAutoCancel(false)
+									  .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 									  .setSound(null)
 									  .setLargeIcon(icon)
 									  .setContentTitle(Helper.FirstLetterCaps(activeSong.getSong_title()))

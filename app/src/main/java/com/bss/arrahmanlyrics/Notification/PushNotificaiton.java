@@ -41,10 +41,15 @@ public class PushNotificaiton extends FirebaseMessagingService {
             Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
             if(remoteMessage.getData().containsKey("song")) {
                 Intent i = new Intent(getApplicationContext(), MainActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 i.putExtra("song", remoteMessage.getData().get("song"));
+                i.putExtra("title",remoteMessage.getData().get("title"));
+                i.putExtra("des",remoteMessage.getData().get("des"));
+
                 startActivity(i);
             }else if(remoteMessage.getData().containsKey("update")){
                 Intent i = new Intent(getApplicationContext(), MainActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 i.putExtra("update", remoteMessage.getData().get("update"));
                 i.putExtra("version",remoteMessage.getData().get("version"));
                 startActivity(i);
