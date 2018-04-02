@@ -21,7 +21,7 @@ import java.util.List;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
 
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // Database Name
     private static final String DATABASE_NAME = "beyonity_albums";
@@ -94,11 +94,13 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     }
 
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-    }
+            onCreate(db);
 
+        }
 
     public int getNoOfSongs() {
 
