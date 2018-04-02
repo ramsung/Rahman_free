@@ -543,6 +543,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
                                         String local_time_songs = dbHandler.getUpdateDetails("songs");
                                         String local_time_albums = dbHandler.getUpdateDetails("albums");
+                                        pDialog.setMessage("loading songs");
                                         showDialog();
                                         getupdatetime(local_time_songs,local_time_albums);
 
