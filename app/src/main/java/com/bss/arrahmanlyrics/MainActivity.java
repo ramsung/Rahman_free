@@ -1,6 +1,5 @@
 package com.bss.arrahmanlyrics;
 
-import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -11,16 +10,12 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.graphics.Typeface;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
@@ -36,10 +31,6 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Html;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -96,20 +87,15 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingService;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -189,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     SearchView songsearch;
     SearchView albumsearch;
 
-
+    boolean newIntent= false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -201,6 +187,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         Log.d("Firebase", "token "+ FirebaseInstanceId.getInstance().getToken());
         //Log.d(TAG, "onCreate: "+getVersionCode());
+
 
         Handler h = new Handler();
         Runnable r = new Runnable() {
@@ -326,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     public void init() {
 
+        Log.d(TAG, "init: called");
         songList = new ArrayList<>();
         songListSearch = new ArrayList<>();
         rv1 = (RecyclerView) findViewById(R.id.rv1);
@@ -456,7 +444,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
     private void getupdatetime(String local_time_songs,String local_time_albums) {
-
         AndroidNetworking.post(AppConfig.GET_UPDATE_TIME)
                 .addBodyParameter("updated", "checking update")
                 .setTag("update time")
@@ -632,6 +619,79 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 });
     }
 
+    public void checkForUpdate(){
+        AndroidNetworking.post(AppConfig.GET_APP_UPDATE)
+                .addBodyParameter("app", "app")
+                .setTag("update")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsJSONObject(new JSONObjectRequestListener() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(TAG, "onResponse: "+response);
+                        try {
+                            if(response.getString("error").equals("false")) {
+
+                                try {
+                                    PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                                    String version = pInfo.versionName;
+                                    int versioncode = pInfo.versionCode;
+                                    Log.d(TAG, "onResponse: versionname = " + version + " version code = " + versioncode);
+
+                                    JSONArray array = response.getJSONArray("app");
+                                    JSONObject object = array.getJSONObject(0);
+                                    int vc = object.getInt("version_code");
+                                    String versionName = object.getString("version_name");
+                                    if(vc>versioncode){
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+                                        builder.setTitle("Update Available");
+
+
+                                        builder.setMessage("A new Version ("+versionName+"("+vc+")) available with performance improvement,stability and important bug fixes, please udpate now");
+
+                                        builder.setNegativeButton("Not Now",
+                                                new DialogInterface.OnClickListener() {
+                                                    public void onClick(DialogInterface dialog,
+                                                                        int which) {
+                                                        return;
+                                                    }
+                                                });
+
+                                        builder.setPositiveButton("Update Now!",
+                                                new DialogInterface.OnClickListener() {
+                                                    public void onClick(DialogInterface dialog,
+                                                                        int which) {
+                                                        final String appPackageName = getPackageName(); // getPackageName() from Context or Activity object
+                                                        try {
+                                                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+                                                        } catch (android.content.ActivityNotFoundException anfe) {
+                                                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+                                                        }
+                                                    }
+                                                });
+
+                                        builder.show();
+                                    }
+                                } catch (PackageManager.NameNotFoundException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                    @Override
+                    public void onError(ANError error) {
+                        Log.e(TAG, "onError: "+error.getErrorDetail());
+                        Toast.makeText(getApplicationContext(), "Error checking for updates", Toast.LENGTH_SHORT).show();
+
+                        //isLoading = false;
+                    }
+                });
+    }
+
     public void getSongs(String table_name, String remote_time, String local_time){
         AndroidNetworking.post(AppConfig.GET_ALL_SONGS)
                 .addBodyParameter("songs", "all")
@@ -699,57 +759,78 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     }
 
     public void handleIntent() {
+
+        newIntent = true;
+
+    }
+
+    public void handleNotificationsAndLinks(){
         String songIdFromFirebase = "";
+
+        Log.d(TAG, "handleIntent: called");
         if (getIntent().getStringExtra("song") != null&&getIntent().getStringExtra("des")!=null&&getIntent().getStringExtra("title")!=null) {
             Log.d(TAG, "onCreate: " + getIntent().getStringExtra("song"));
             songIdFromFirebase = getIntent().getStringExtra("song");
             desFromfirebase = getIntent().getStringExtra("des");
             titleFromFirebase = getIntent().getStringExtra("title");
-        }else if(getIntent().getStringExtra("update")!=null){
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
-            try {
-                int value  = Integer.parseInt(getIntent().getStringExtra("version"));
-                if(value>getVersionCode()){
-                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-                    builder.setTitle("Update Available");
-
-                    builder.setMessage("Its Recommended to update the app to get latest features and important bug fixes");
-
-                    builder.setNegativeButton("Not Now",
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog,
-                                                    int which) {
-                                    return;
-                                }
-                            });
-                    String finalSongIdFromFirebase = songIdFromFirebase;
-                    builder.setPositiveButton("Update Now!",
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog,
-                                                    int which) {
-                                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + getApplication().getPackageName())));
-                                }
-                            });
-
-                    builder.show();
-
-                }else {
-                    Toast.makeText(this, "Your app is uptodate ignore the Message!", Toast.LENGTH_SHORT).show();
-                }
-            }catch (NumberFormatException e){
-                Toast.makeText(this, "Failed to get Update request!", Toast.LENGTH_SHORT).show();
-            }
+            builder.setTitle(titleFromFirebase);
 
 
+            builder.setMessage(desFromfirebase);
+
+            builder.setNegativeButton("Don't Play",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,
+                                            int which) {
+                            return;
+                        }
+                    });
+            String finalSongIdFromFirebase = songIdFromFirebase;
+            builder.setPositiveButton("Play Now!",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,
+                                            int which) {
+                            handleSongRequest(finalSongIdFromFirebase);
+                        }
+                    });
+
+            builder.show();
+        }else if(getIntent().getStringExtra("album")!=null&&getIntent().getStringExtra("des")!=null){
+
+            String albumName  = getIntent().getStringExtra("album");
+            Log.d(TAG, "handleNotificationsAndLinks: "+albumName);
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+            builder.setTitle(Helper.FirstLetterCaps(albumName));
 
 
-        }
+            builder.setMessage(getIntent().getStringExtra("des")+" check out album list now");
+
+            builder.setNegativeButton("Don't Play",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,
+                                            int which) {
+                            return;
+                        }
+                    });
+            String finalSongIdFromFirebase = songIdFromFirebase;
+            builder.setPositiveButton("Play Songs!",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,
+                                            int which) {
+                            handleAlbumRequest(albumName);
+                        }
+                    });
+
+            builder.show();
 
 
 
-        if (songIdFromFirebase.equals("")) {
-            Log.d(TAG, "calls: called handle");
+        }else {
+
+            Log.d(TAG, "handleIntent: am inside else");
             Intent appLinkIntent = getIntent();
             String appLinkAction = appLinkIntent.getAction();
             Uri appLinkData = appLinkIntent.getData();
@@ -759,47 +840,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 if (songId == null) {
                     return;
                 }
-                    handleSongRequest(songId);
+                handleSongRequest(songId);
 
-            }
-        }else {
-            if (getIntent().getStringExtra("song") != null&&!titleFromFirebase.equals("")&&!desFromfirebase.equals("")) {
-
-                
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-                builder.setTitle(titleFromFirebase);
-
-
-                builder.setMessage(desFromfirebase);
-
-                builder.setNegativeButton("Don't Play",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                                int which) {
-                                return;
-                            }
-                        });
-                String finalSongIdFromFirebase = songIdFromFirebase;
-                builder.setPositiveButton("Play The song!",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,
-                                                int which) {
-                                handleSongRequest(finalSongIdFromFirebase);
-                            }
-                        });
-
-                builder.show();
-
+            }else {
+                checkForUpdate();
             }
         }
+
+
+
     }
 
         @Override
         protected void onNewIntent (Intent intent){
             super.onNewIntent(intent);
             setIntent(intent);
-
             handleIntent();
         }
 
@@ -969,6 +1024,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             drawer.closeDrawer(GravityCompat.START);
         } else if (drawer.isDrawerOpen(GravityCompat.END)) {
             drawer.closeDrawer(GravityCompat.END);
+        }
+    }
+    public void OpenDrawer() {
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        if(!drawer.isDrawerVisible(GravityCompat.END)){
+            drawer.openDrawer(GravityCompat.END);
         }
     }
 
@@ -1286,6 +1348,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 setUpSongsAlbums();
 
                 setUp_favoritePanel();
+                if(newIntent){
+
+                    newIntent = false;
+                    handleNotificationsAndLinks();
+                }
+
+
             }
 
         };
@@ -2219,6 +2288,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     public void handleSongRequest(String songId) {
         Log.d(TAG, "handleSongRequest: "+songId);
         songId = songId.replaceAll("%20", " ");
+        songId = songId.toUpperCase();
         StorageUtil storageUtil = new StorageUtil(getApplicationContext());
         song song = dbHandler.getSongBySongTitle(songId);
         if (song == null) {
@@ -2266,6 +2336,37 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         }
 
         Log.d(TAG,"calls: got false in handle itself");
+    }
+    public void handleAlbumRequest(String AlbumName) {
+        Log.d(TAG, "handleAlbumRequest: "+AlbumName);
+        AlbumName = AlbumName.toUpperCase();
+        List<albums> model = albumAdapter.get_listDataHeader();
+        HashMap<String, List<song>> map = albumAdapter.get_listDataChild();
+
+
+        List<song> songlistalbums = map.get(AlbumName);
+        StorageUtil storageUtil = new StorageUtil(getApplicationContext());
+        if(songlistalbums!=null) {
+            playlist.clear();
+            for (song songs : songlistalbums) {
+                song s = new song(songs.getSong_id(), songs.getSong_title(), songs.getAlbum_id(), songs.getAlbum_name(), songs.getDownload_link(), songs.getLyricist(), songs.getTrack_no());
+                playlist.add(s);
+            }
+
+            storageUtil.storeAudio(playlist);
+            storageUtil.storeAudioIndex(0);
+            Intent setplaylist = new Intent(MainActivity.Broadcast_NEW_ALBUM);
+            sendBroadcast(setplaylist);
+            Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+            sendBroadcast(broadcastIntent);
+            OpenDrawer();
+            if (albumsearch != null) {
+                albumsearch.setQuery(Helper.FirstLetterCaps(AlbumName), true);
+            }
+            Log.d(TAG, "handleAlbumRequest: " + model.indexOf(AlbumName));
+        }else {
+            Toast.makeText(this, Helper.FirstLetterCaps(AlbumName)+" not found in the database", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public int getVersionCode(){

@@ -13,6 +13,7 @@ import com.bss.arrahmanlyrics.R;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.inmobi.sdk.InMobiSdk;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -73,6 +74,7 @@ public class EnglishFragment extends Fragment {
 		View view = inflater.inflate(R.layout.fragment_english_lyrics,container,false);
 		lyrics1 = (TextView) view.findViewById(R.id.lyricsEnglish);
 		lyrics2 = (TextView) view.findViewById(R.id.lyricsEnglish2);
+		InMobiSdk.setLogLevel(InMobiSdk.LogLevel.DEBUG);
 
 		mAdView = (AdView) view.findViewById(R.id.english_top);
 

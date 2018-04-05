@@ -32,6 +32,8 @@ public class AppConfig {
 
 	public static String GET_UPDATE_TIME= "https://beyonitysoftwares.cf/android/getUpdateTime.php";
 
+	public static String GET_APP_UPDATE= "https://beyonitysoftwares.cf/android/appupdate.php";
+
 
 
 

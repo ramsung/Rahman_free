@@ -13,6 +13,7 @@ import com.bss.arrahmanlyrics.R;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.inmobi.sdk.InMobiSdk;
 
 
 /**
@@ -78,6 +79,8 @@ public class TamilFragment extends Fragment {
 		View view = inflater.inflate(R.layout.fragment_other_lyrics, container, false);
 		lyrics1 = (TextView) view.findViewById(R.id.lyricsOthers);
 		lyrics2 = (TextView) view.findViewById(R.id.lyricsOthers2);
+		InMobiSdk.setLogLevel(InMobiSdk.LogLevel.DEBUG);
+
 		mAdView = (AdView) view.findViewById(R.id.tamil_top);
 
 		AdRequest adRequest = new AdRequest.Builder()
