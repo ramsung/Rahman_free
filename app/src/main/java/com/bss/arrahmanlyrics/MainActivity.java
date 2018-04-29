@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         Log.d(TAG, "calls: on create");
         FirebaseInstanceId.getInstance().getToken();
-        Fabric.with(this, new Crashlytics());
+        Fabric.with(this,new Crashlytics());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         Log.d("Firebase", "token "+ FirebaseInstanceId.getInstance().getToken());
         //Log.d(TAG, "onCreate: "+getVersionCode());

@@ -483,7 +483,8 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 								  NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 								  notifManager.createNotificationChannel(channel);
 // notificationId is a unique int for each notification that you must define
-								  notifManager.notify(NOTIFICATION_ID, mBuilder.build());
+								  //notifManager.notify(NOTIFICATION_ID, mBuilder.build());
+								  startForeground(NOTIFICATION_ID,mBuilder.build());
 								  if (playbackStatus == PlaybackStatus.PLAYING) {
 									  mBuilder.setOngoing(true);
 								  } else if (playbackStatus == PlaybackStatus.PAUSED) {
@@ -493,7 +494,8 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 							  }else if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
 								  NotificationManager notifManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 								  // notificationId is a unique int for each notification that you must define
-								  notifManager.notify(NOTIFICATION_ID, mBuilder.build());
+								  //notifManager.notify(NOTIFICATION_ID, mBuilder.build());
+									startForeground(NOTIFICATION_ID,mBuilder.build());
 
 							  }
 						  }
