@@ -2251,8 +2251,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             player.setMainCallbacks(null);
         }
 
-        NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancelAll();
+        /*NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();*/
         Log.i(TAG, "onDestroy: am in destory");
         if (pDialog != null) {
             pDialog.dismiss();
